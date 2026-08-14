@@ -1,12 +1,5 @@
-import axios from "axios";
-
-export const api = axios.create({
-  // নিশ্চিত করো তোমার ব্যাকএন্ড পোর্ট এবং বেস ইউআরএল একদম ঠিক আছে
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+export const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 export interface FilterParams {
   search: string;
@@ -17,25 +10,38 @@ export interface FilterParams {
 }
 
 export const fetchProjects = async (filters: FilterParams) => {
-  const cleanedParams: any = {};
+  const cleanedParams = new URLSearchParams();
 
-  // শুধুমাত্র ভ্যালু থাকা প্যারামিটারগুলোকেই ব্যাকএন্ডে পাঠানো হবে
-  if (filters.search && filters.search.trim() !== "")
-    cleanedParams.search = filters.search;
-  if (filters.category && filters.category.trim() !== "")
-    cleanedParams.category = filters.category;
-  if (filters.minBudget && filters.minBudget.trim() !== "")
-    cleanedParams.minBudget = filters.minBudget;
-  if (filters.maxBudget && filters.maxBudget.trim() !== "")
-    cleanedParams.maxBudget = filters.maxBudget;
-  if (filters.sortBy && filters.sortBy.trim() !== "")
-    cleanedParams.sortBy = filters.sortBy;
+  // শুধুমাত্র ভ্যালু থাকা প্যারামিটারগুলোকেই যুক্ত করা হচ্ছে
+  if (filters.search?.trim()) cleanedParams.append("search", filters.search);
+  if (filters.category?.trim())
+    cleanedParams.append("category", filters.category);
+  if (filters.minBudget?.trim())
+    cleanedParams.append("minBudget", filters.minBudget);
+  if (filters.maxBudget?.trim())
+    cleanedParams.append("maxBudget", filters.maxBudget);
+  if (filters.sortBy?.trim()) cleanedParams.append("sortBy", filters.sortBy);
 
   try {
-    const response = await api.get("/projects", { params: cleanedParams });
-    return response.data;
+    // URL এর সাথে কোয়েরি প্যারামিটার যুক্ত করা হচ্ছে
+    const url = `${BASE_URL}/projects?${cleanedParams.toString()}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    // Fetch API নিজে থেকে HTTP Error (যেমন: 400, 500) থ্রো করে না, তাই ম্যানুয়ালি চেক করতে হবে
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
   } catch (error) {
-    console.error("Axios Fetch Error:", error);
-    throw error; // TanStack Query কে এররটা হ্যান্ডেল করতে দেওয়ার জন্য থ্রো করা জরুরি
+    console.error("Fetch Error:", error);
+    throw error; // TanStack Query যেন এরর হ্যান্ডেল করতে পারে
   }
 };

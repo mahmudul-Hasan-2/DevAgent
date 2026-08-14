@@ -43,7 +43,7 @@ export default function LoginPage() {
     toast.loading("Redirecting to Google Secure Gate...");
     await authClient.signIn.social({
       provider: "google",
-      callbackURL: "/items/manage",
+      callbackURL: "/",
     });
   };
 

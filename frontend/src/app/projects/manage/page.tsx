@@ -50,7 +50,7 @@ export default function ManageProjectsPage() {
     queryFn: async () => {
       if (!userId) return [];
       const res = await fetch(
-        `http://localhost:5000/api/projects/user?userId=${userId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/projects/user?userId=${userId}`,
       );
       if (!res.ok) throw new Error("Failed to fetch user projects");
       return res.json();
@@ -62,7 +62,9 @@ export default function ManageProjectsPage() {
   // পেন আইকনে ক্লিক করলে এপিআই কল করে ডেটা এনে মোডাল ওপেন করা
   const handleOpenEditModal = async (id: string) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/project/${id}`);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/project/${id}`,
+      );
       if (!res.ok) throw new Error("Failed to fetch project details");
       const projectData = await res.json();
 
@@ -115,7 +117,7 @@ export default function ManageProjectsPage() {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/project/${selectedProject._id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/project/${selectedProject._id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
