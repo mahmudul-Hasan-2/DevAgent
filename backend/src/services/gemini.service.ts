@@ -1,181 +1,142 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 dotenv.config();
-import {
-  GoogleGenerativeAI,
-  GenerativeModel,
-  ChatSession,
-} from "@google/generative-ai";
 
-const apiKey = process.env.GEMINI_API_KEY;
+const apiKey = process.env.GEMINI_API_KEY || "";
+
 if (!apiKey) {
-  throw new Error("GEMINI_API_KEY is missing in environment variables!");
+  console.warn("WARNING: GEMINI_API_KEY is missing in environment variables!");
 }
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// Constants for model and configuration
-const MODEL_NAME = "gemini-1.5-flash"; // প্রয়োজনে এখানে "gemini-1.5-pro" বা লেটেস্ট মডেল নাম দিতে পারো
-const GENERATION_CONFIG = {
-  temperature: 0.15,
-  topP: 0.8,
-  topK: 40,
-};
-const DEFAULT_TIMEOUT_MS = 15000;
-
-/**
- * Wraps a Promise with a timeout.
- * @param promise The promise to wrap.
- * @param ms The timeout duration in milliseconds.
- * @returns A promise that resolves with the result of the original promise or rejects with a timeout error.
- */
-const withTimeout = async <T>(
-  promise: Promise<T>,
-  ms: number = DEFAULT_TIMEOUT_MS,
-): Promise<T> => {
-  let timeoutId: NodeJS.Timeout | null = null;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => {
-      reject(
-        new Error(
-          "AI Request Timed Out. Network might be blocking the request.",
-        ),
-      );
-    }, ms);
-  });
-
-  try {
-    const result = await Promise.race([promise, timeoutPromise]);
-    if (timeoutId) clearTimeout(timeoutId);
-    return result;
-  } catch (error) {
-    if (timeoutId) clearTimeout(timeoutId);
-    throw error;
-  }
-};
-
-/**
- * Removes Markdown formatting from a string.
- * @param text The input string.
- * @returns The string with Markdown removed.
- */
-export function stripMarkdown(text: string): string {
-  if (!text) return "";
-
-  return (
-    text
-      // Normalize line endings
-      .replace(/\r\n/g, "\n")
-
-      // Remove entire fenced code blocks
-      .replace(/```[\s\S]*?```/g, "")
-      .replace(/~~~[\s\S]*?~~~/g, "")
-
-      // Inline code
-      .replace(/`([^`]*)`/g, "$1")
-
-      // Images & Links
-      .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-
-      // Headings
-      .replace(/^#{1,6}\s*/gm, "")
-
-      // Blockquotes
-      .replace(/^>\s*/gm, "")
-
-      // Bullet & Numbered lists
-      .replace(/^\s*[-*+•]\s*/gm, "")
-      .replace(/^\s*\d+[.)]\s*/gm, "")
-
-      // Bold & Italic (order matters for longest match first)
-      .replace(/\*\*\*([^*]+)\*\*\*/g, "$1") // ***bold italic***
-      .replace(/\*\*([^*]+)\*\*/g, "$1") // **bold**
-      .replace(/\*([^*]+)\*/g, "$1") // *italic*
-      .replace(/___([^_]+)___/g, "$1") // ___bold italic___
-      .replace(/__([^_]+)__/g, "$1") // __bold__
-      .replace(/_([^_]+)_/g, "$1") // _italic_
-
-      // Horizontal rules
-      .replace(/^---$/gm, "")
-
-      // Extra spaces and newlines cleanup
-      .replace(/[ \t]+/g, " ")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim()
-  );
+// ====================== TYPES ======================
+export interface ProjectBlueprint {
+  title: string;
+  shortDescription: string;
+  fullDescription: string;
+  problemStatement: string;
+  targetAudience: string[];
+  techStack: {
+    frontend: string[];
+    backend: string[];
+    database: string[];
+    devops: string[];
+    other: string[];
+  };
+  keyFeatures: string[];
+  userStories: string[];
+  architectureOverview: string;
+  milestones: {
+    phase: string;
+    tasks: string[];
+    estimatedDays: number;
+  }[];
+  risks: string[];
+  successMetrics: string[];
 }
 
-// Define a type for chat history for better type safety
-interface ChatHistoryItem {
-  role: "user" | "model" | "assistant";
-  parts: { text: string }[];
-}
-
-// 1. Project Description with Timeout
-export const generateAIContent = async (prompt: string): Promise<string> => {
+// ====================== STRUCTURED GENERATION ======================
+export const generateProjectBlueprint = async (
+  idea: string
+): Promise<ProjectBlueprint> => {
   try {
-    const model: GenerativeModel = genAI.getGenerativeModel({
-      model: MODEL_NAME,
-      generationConfig: GENERATION_CONFIG,
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash", // change to gemini-1.5-flash or gemini-2.5-flash if needed
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.7,
+      },
     });
 
-    const fullPrompt = `Write a professional project description for: ${prompt}. Reply in pure plain text only without any markdown.`;
+    const prompt = `
+You are an elite software architect and senior product manager with 15+ years of experience.
 
-    const result = await withTimeout(model.generateContent(fullPrompt));
-    const generatedText = result.response.text() || "";
+Generate a complete, production-ready project blueprint from this idea:
 
-    return stripMarkdown(generatedText);
+"${idea}"
+
+Return ONLY valid JSON. Do not include any markdown, code blocks, or extra text.
+The JSON must exactly match this structure:
+
+{
+  "title": "string",
+  "shortDescription": "string (max 2 sentences)",
+  "fullDescription": "string (detailed paragraph)",
+  "problemStatement": "string",
+  "targetAudience": ["string"],
+  "techStack": {
+    "frontend": ["string"],
+    "backend": ["string"],
+    "database": ["string"],
+    "devops": ["string"],
+    "other": ["string"]
+  },
+  "keyFeatures": ["string"],
+  "userStories": ["As a user, I want..."],
+  "architectureOverview": "string",
+  "milestones": [
+    {
+      "phase": "string",
+      "tasks": ["string"],
+      "estimatedDays": number
+    }
+  ],
+  "risks": ["string"],
+  "successMetrics": ["string"]
+}
+`;
+
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+
+    const parsed = JSON.parse(text) as ProjectBlueprint;
+    return parsed;
   } catch (error) {
-    console.error("Gemini API Error during content generation:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "AI Content Generation Failed";
-    throw new Error(`Failed to generate AI content: ${errorMessage}`);
+    console.error("Gemini Blueprint Generation Error:", error);
+    throw new Error("Failed to generate project blueprint");
   }
 };
 
-// 2. Chat Service with Timeout
+// ====================== CHAT ======================
 export const chatWithAI = async (
-  history: ChatHistoryItem[] = [],
+  history: { role: "user" | "model"; parts: { text: string }[] }[],
   message: string,
+  projectContext?: string
 ): Promise<string> => {
   try {
-    const model: GenerativeModel = genAI.getGenerativeModel({
-      model: MODEL_NAME,
-      generationConfig: GENERATION_CONFIG,
-      systemInstruction: `
-You are a helpful AI assistant.
-
-Rules:
-- Reply using plain text only.
-- Never use Markdown.
-- Never use **bold** or *italic*.
-- Never use headings (#).
-- Never use bullet lists.
-- Never use numbered lists.
-- Never use tables.
-- Never use code blocks.
-- Never use backticks.
-`,
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash",
     });
 
-    // Map history, ensuring correct role mapping and handling potential undefined parts
-    const mappedHistory = (history || []).map((h) => ({
-      role: h.role === "assistant" ? "model" : h.role, // Map "assistant" to "model"
-      parts: h.parts || [{ text: "" }], // Ensure parts is an array, default to empty text if missing
-    }));
+    const systemPrompt = projectContext
+      ? `You are an expert AI co-pilot and senior developer helping with this specific project:\n\n${projectContext}\n\nAlways answer in the context of this project. Be concise, practical, and helpful.`
+      : `You are an expert AI developer co-pilot. Be helpful, practical, and concise.`;
 
-    const chat: ChatSession = model.startChat({
-      history: mappedHistory,
+    const chat = model.startChat({
+      history: [
+        {
+          role: "user",
+          parts: [{ text: systemPrompt }],
+        },
+        {
+          role: "model",
+          parts: [{ text: "Understood. I'm ready to help." }],
+        },
+        ...history,
+      ],
     });
 
-    const result = await withTimeout(chat.sendMessage(message));
-    let responseText = result.response.text() || "";
-
-    return stripMarkdown(responseText);
+    const result = await chat.sendMessage(message);
+    return result.response.text();
   } catch (error) {
     console.error("Gemini Chat Error:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "AI Chat Failed";
-    throw new Error(`AI chat failed: ${errorMessage}`);
+    throw new Error("AI Chat Failed");
   }
+};
+
+// Keep old function for backward compatibility (optional)
+export const generateAIContent = async (prompt: string) => {
+  const blueprint = await generateProjectBlueprint(prompt);
+  return blueprint.fullDescription;
 };

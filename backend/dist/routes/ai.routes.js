@@ -1,8 +1,10 @@
 import { Router } from "express";
-import { generateContent, handleChat } from "../controllers/ai.controller.js";
+import { generateBlueprint, generateContent, handleChat, } from "../controllers/ai.controller.js";
 const router = Router();
-// POST: /api/ai/generate
-router.post("/generate", generateContent);
-// POST: /api/ai/chat
+// New structured endpoint
+router.post("/generate-blueprint", generateBlueprint);
+// Chat
 router.post("/chat", handleChat);
+// Old endpoint (keep for backward compatibility)
+router.post("/generate", generateContent);
 export default router;
