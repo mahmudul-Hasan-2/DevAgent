@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { generateBlueprint, generateContent, handleChat, } from "../controllers/ai.controller.js";
+import { generateBlueprint, handleChat, generateContent, } from "../controllers/ai.controller.js";
 const router = Router();
 // New structured endpoint
 router.post("/generate-blueprint", generateBlueprint);
