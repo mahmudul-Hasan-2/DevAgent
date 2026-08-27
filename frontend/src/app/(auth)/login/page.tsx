@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
+import { Eye, EyeOff, Loader2, LogIn, Sparkles, Zap } from "lucide-react";
 import Link from "next/link";
-import { LogIn, Loader2, Eye, EyeOff } from "lucide-react";
-import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { FaGoogle } from "react-icons/fa";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // 👁️ শো/হাইড স্টেট
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -25,10 +25,11 @@ export default function LoginPage() {
     });
 
     setLoading(false);
+
     if (authError) {
       toast.error(authError.message || "Invalid credentials provided.");
     } else {
-      toast.success("Welcome back, Chief! Access granted.");
+      toast.success("Welcome back! Access granted.");
       router.push("/");
     }
   };
@@ -36,11 +37,11 @@ export default function LoginPage() {
   const fillDemoCredentials = () => {
     setEmail("demo.developer@devagent.com");
     setPassword("DemoPassword123!");
-    toast.info("Demo credentials loaded into terminal fields.");
+    toast.info("Demo credentials loaded.");
   };
 
   const handleGoogleLogin = async () => {
-    toast.loading("Redirecting to Google Secure Gate...");
+    toast.loading("Redirecting to Google...");
     await authClient.signIn.social({
       provider: "google",
       callbackURL: "/",
@@ -48,100 +49,136 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="w-full max-w-md p-8 bg-[#1E293B] rounded-custom border border-slate-700 shadow-xl">
-      <div className="flex justify-center mb-4 text-secondary">
-        <LogIn className="w-12 h-12" />
-      </div>
+    <div className="w-full max-w-md">
+      {/* Card */}
+      <div className="relative overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900/80 shadow-2xl backdrop-blur">
+        {/* Top glow */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
 
-      <h2 className="text-2xl font-bold text-center mb-2 text-slate-100">
-        Welcome to <span className="text-secondary">DevAgent</span>
-      </h2>
-      <p className="text-center text-slate-400 text-xs mb-6">
-        Log in to manage your AI agents and data infrastructure.
-      </p>
+        <div className="p-8 md:p-10">
+          {/* Header */}
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-400 ring-1 ring-violet-500/20">
+              <LogIn className="h-7 w-7" />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-white">
+              Welcome to{" "}
+              <span className="bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">
+                DevAgent
+              </span>
+            </h1>
+            <p className="mt-2 text-sm text-zinc-400">
+              Sign in to manage your AI agents and projects
+            </p>
+          </div>
 
-      <form onSubmit={handleLogin} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1 text-slate-300">
-            Email Address
-          </label>
-          <input
-            type="email"
-            required
-            className="w-full p-3 bg-[#0F172A] border border-slate-600 rounded-custom text-slate-200 focus:outline-none focus:border-secondary transition-all"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
+          {/* Form */}
+          <form onSubmit={handleLogin} className="space-y-5">
+            {/* Email */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-zinc-300">
+                Email Address
+              </label>
+              <input
+                type="email"
+                required
+                placeholder="you@example.com"
+                className="w-full rounded-xl border border-zinc-700 bg-zinc-950/80 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none transition focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
 
-        {/* পাসওয়ার্ড ইনপুট উইথ টগল বাটন */}
-        <div>
-          <label className="block text-sm font-medium mb-1 text-slate-300">
-            Password
-          </label>
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              required
-              className="w-full p-3 pr-12 bg-[#0F172A] border border-slate-600 rounded-custom text-slate-200 focus:outline-none focus:border-secondary transition-all"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            {/* Password */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-zinc-300">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  placeholder="••••••••"
+                  className="w-full rounded-xl border border-zinc-700 bg-zinc-950/80 px-4 py-3 pr-12 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none transition focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 transition hover:text-zinc-300"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4.5 w-4.5" />
+                  ) : (
+                    <Eye className="h-4.5 w-4.5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Submit */}
             <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
+              type="submit"
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:opacity-60"
             >
-              {showPassword ? (
-                <EyeOff className="w-5 h-5" />
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
               ) : (
-                <Eye className="w-5 h-5" />
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Sign In
+                </>
               )}
             </button>
+          </form>
+
+          {/* Divider */}
+          <div className="my-6 flex items-center gap-3">
+            <div className="h-px flex-1 bg-zinc-800" />
+            <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+              Or continue with
+            </span>
+            <div className="h-px flex-1 bg-zinc-800" />
           </div>
-        </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 bg-secondary hover:bg-blue-700 text-white font-semibold rounded-custom transition duration-200 flex items-center justify-center gap-2"
-        >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign In"}
-        </button>
-      </form>
+          {/* Secondary actions */}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={fillDemoCredentials}
+              className="flex items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800/50 px-3 py-2.5 text-xs font-medium text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+            >
+              <Zap className="h-3.5 w-3.5 text-amber-400" />
+              Demo Account
+            </button>
 
-      <div className="mt-6 space-y-3">
-        <div className="relative flex py-2 items-center">
-          <div className="flex-grow border-t border-slate-700"></div>
-          <span className="flex-shrink mx-4 text-slate-500 text-xs uppercase">
-            Or Fast Track Access
-          </span>
-          <div className="flex-grow border-t border-slate-700"></div>
-        </div>
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              className="flex items-center justify-center gap-2 rounded-xl border border-zinc-700 bg-zinc-800/50 px-3 py-2.5 text-xs font-medium text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+            >
+              <FaGoogle className="h-3.5 w-3.5 text-red-400" />
+              Google
+            </button>
+          </div>
 
-        <div className="flex flex-col sm:flex-row gap-2">
-          <button
-            onClick={fillDemoCredentials}
-            className="flex-1 py-2.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-accent rounded-custom border border-slate-600 transition duration-200"
-          >
-            ⚡ Auto-Fill Demo
-          </button>
-
-          <button
-            onClick={handleGoogleLogin}
-            className="flex-1 py-2.5 text-xs font-bold bg-[#0F172A] hover:bg-slate-800 text-slate-200 rounded-custom border border-slate-600 flex items-center justify-center gap-2 transition duration-200"
-          >
-            <FaGoogle className="w-4 h-4 text-red-400" /> Google Login
-          </button>
+          {/* Footer */}
+          <p className="mt-8 text-center text-sm text-zinc-500">
+            Don&apos;t have an account?{" "}
+            <Link
+              href="/register"
+              className="font-medium text-violet-400 transition hover:text-violet-300"
+            >
+              Register now
+            </Link>
+          </p>
         </div>
       </div>
-
-      <p className="text-sm text-center text-slate-400 mt-6">
-        Don&apos;t have an account?{" "}
-        <Link href="/register" className="text-accent hover:underline">
-          Register Now
-        </Link>
-      </p>
     </div>
   );
 }

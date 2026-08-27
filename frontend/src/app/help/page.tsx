@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
 import {
-  HelpCircle,
-  ChevronDown,
-  MessageSquare,
-  Mail,
-  Search,
   ArrowLeft,
+  ChevronDown,
+  HelpCircle,
+  Mail,
+  MessageSquare,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 const faqs = [
   {
@@ -45,13 +45,13 @@ export default function HelpPage() {
   const filteredFaqs = faqs.filter(
     (faq) =>
       faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      faq.answer.toLowerCase().includes(searchQuery.toLowerCase()),
+      faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <div className="min-h-screen bg-[#05070C] text-slate-100 px-6 py-12">
       <div className="max-w-4xl mx-auto">
-        {/* ব্যাক বাটন */}
+        {/* Navigation */}
         <Link
           href="/projects"
           className="inline-flex items-center text-xs font-mono text-slate-400 hover:text-cyan-400 mb-8 transition-colors"
@@ -59,9 +59,9 @@ export default function HelpPage() {
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Deployments
         </Link>
 
-        {/* হেডার */}
+        {/* Header */}
         <div className="text-center mb-10 space-y-3">
-          <div className="inline-flex items-center justify-center p-3 bg-cyan-950/40 border border-cyan-800/30 rounded-2xl text-cyan-400 mb-2">
+          <div className="inline-flex items-center justify-center p-3 bg-cyan-950/40 border border-cyan-800/30 rounded-2xl text-cyan-400 mb-2 shadow-inner">
             <HelpCircle className="w-8 h-8" />
           </div>
           <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
@@ -73,7 +73,7 @@ export default function HelpPage() {
           </p>
         </div>
 
-        {/* সার্চ বার */}
+        {/* Search Input */}
         <div className="relative max-w-xl mx-auto mb-12">
           <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-500" />
           <input
@@ -81,11 +81,11 @@ export default function HelpPage() {
             placeholder="Search for answers, guides, or features..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#0A0D14] border border-slate-800/80 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-cyan-500 transition-colors placeholder-slate-600 shadow-md text-slate-200"
+            className="w-full bg-[#0A0D14] border border-slate-800/80 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-cyan-500 transition-all placeholder-slate-600 shadow-md text-slate-200"
           />
         </div>
 
-        {/* এফএকিউ সেকশন */}
+        {/* FAQ List */}
         <div className="space-y-4 mb-16">
           <h2 className="text-lg font-semibold text-slate-200 mb-6">
             Frequently Asked Questions
@@ -96,35 +96,45 @@ export default function HelpPage() {
               No matching help topics found.
             </div>
           ) : (
-            filteredFaqs.map((faq, index) => (
-              <div
-                key={index}
-                className="bg-[#0A0D14] border border-slate-800/60 rounded-xl overflow-hidden transition-colors"
-              >
-                <button
-                  onClick={() => toggleAccordion(index)}
-                  className="w-full flex items-center justify-between p-5 text-left text-sm font-medium text-slate-200 hover:text-cyan-400 transition-colors"
+            filteredFaqs.map((faq, index) => {
+              const isOpen = openIndex === index;
+              return (
+                <div
+                  key={faq.question}
+                  className="bg-[#0A0D14] border border-slate-800/60 rounded-xl overflow-hidden transition-all duration-200 hover:border-slate-700/80"
                 >
-                  <span>{faq.question}</span>
-                  <ChevronDown
-                    className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${
-                      openIndex === index
-                        ? "transform rotate-180 text-cyan-400"
-                        : ""
+                  <button
+                    onClick={() => toggleAccordion(index)}
+                    aria-expanded={isOpen}
+                    className="w-full flex items-center justify-between p-5 text-left text-sm font-medium text-slate-200 hover:text-cyan-400 transition-colors focus:outline-none"
+                  >
+                    <span>{faq.question}</span>
+                    <ChevronDown
+                      className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${
+                        isOpen ? "transform rotate-180 text-cyan-400" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {/* CSS Grid base smooth transition */}
+                  <div
+                    className={`grid transition-all duration-300 ease-in-out ${
+                      isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
                     }`}
-                  />
-                </button>
-                {openIndex === index && (
-                  <div className="px-5 pb-5 text-xs text-slate-400 leading-relaxed border-t border-slate-900/60 pt-3">
-                    {faq.answer}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="px-5 pb-5 text-xs text-slate-400 leading-relaxed border-t border-slate-900/60 pt-3">
+                        {faq.answer}
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-            ))
+                </div>
+              );
+            })
           )}
         </div>
 
-        {/* কন্টাক্ট সাপোর্ট কার্ড */}
+        {/* Support Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-[#0A0D14] border border-slate-800/60 rounded-2xl p-8 shadow-lg">
           <div className="flex items-start space-x-4">
             <div className="p-3 bg-cyan-950/40 border border-cyan-800/30 rounded-xl text-cyan-400">
@@ -150,8 +160,14 @@ export default function HelpPage() {
                 Email Support
               </h3>
               <p className="text-xs text-slate-400 mt-1">
-                Reach out to our engineering team directly at
-                support@agenticdeployments.io for urgent issues.
+                Reach out to our engineering team directly at{" "}
+                <a
+                  href="mailto:support@agenticdeployments.io"
+                  className="text-cyan-400 hover:underline"
+                >
+                  support@agenticdeployments.io
+                </a>{" "}
+                for urgent issues.
               </p>
             </div>
           </div>

@@ -1,42 +1,42 @@
 "use client";
 
-import React from "react";
-import { Cpu, ShieldCheck, Target, Network } from "lucide-react";
 import AnimatedCounter from "@/components/AnimatedCounter";
+import { Cpu, Network, ShieldCheck, Target } from "lucide-react";
+
+const coreValues = [
+  {
+    icon: Cpu,
+    title: "Agentic Intelligence",
+    description:
+      "We go beyond static search. Our autonomous AI agents actively analyze codebases, system architecture, and structural engineering telemetry to vet global talent.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Decentralized Trust",
+    description:
+      "Secure, sandbox-isolated workspaces ensuring intellectual property protection and fully transparent compliance frameworks for international contracts.",
+  },
+  {
+    icon: Target,
+    title: "Precision Matching",
+    description:
+      "Eliminating the noise of traditional sourcing. Our engine maps technical depth directly to scale-up architectural stacks with zero human bias.",
+  },
+];
+
+const platformStats = [
+  { value: "94%", label: "Sourcing Efficiency" },
+  { value: "2.4M+", label: "Token Evaluated/Min" },
+  { value: "48s", label: "Avg. Match Latency" },
+  { value: "100%", label: "Automated Vetting" },
+];
 
 export default function AboutPage() {
-  const coreValues = [
-    {
-      icon: Cpu,
-      title: "Agentic Intelligence",
-      description:
-        "We go beyond static search. Our autonomous AI agents actively analyze codebases, system architecture, and structural engineering telemetry to vet global talent.",
-    },
-    {
-      icon: ShieldCheck,
-      title: "Decentralized Trust",
-      description:
-        "Secure, sandbox-isolated workspaces ensuring intellectual property protection and fully transparent compliance frameworks for international contracts.",
-    },
-    {
-      icon: Target,
-      title: "Precision Matching",
-      description:
-        "Eliminating the noise of traditional sourcing. Our engine maps technical depth directly to scale-up architectural stacks with zero human bias.",
-    },
-  ];
-
-  const platformStats = [
-    { value: "94%", label: "Sourcing Efficiency" },
-    { value: "2.4M+", label: "Token Evaluated/Min" },
-    { value: "48s", label: "Avg. Match Latency" },
-    { value: "100%", label: "Automated Vetting" },
-  ];
-
   return (
-    <main className="w-full min-h-screen bg-[#0A0D14] text-white pt-24 pb-20">
+    <main className="w-full min-h-screen bg-[#0A0D14] text-white pt-24 pb-20 selection:bg-cyan-500/30">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-20">
-        {/* Section 1: Hero Intro (No placeholder content) */}
+
+        {/* Section 1: Hero Intro */}
         <section className="text-center max-w-3xl mx-auto space-y-4">
           <div className="inline-flex items-center space-x-2 bg-cyan-500/[0.07] border border-cyan-500/20 px-3 py-1 rounded-full text-xs font-medium text-cyan-400 tracking-wide">
             <Network className="w-3.5 h-3.5" />
@@ -56,15 +56,14 @@ export default function AboutPage() {
           </p>
         </section>
 
-        {/* Section 2: Platform Stats (With Safe Counter Animation) */}
+        {/* Section 2: Platform Stats */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {platformStats.map((stat) => (
             <div
               key={stat.label}
-              className="bg-[#0D121F] border border-white/[0.05] rounded-xl p-6 text-center space-y-1 shadow-[0_4px_20px_rgba(0,0,0,0.2)] hover:border-cyan-500/20 transition-all"
+              className="bg-[#0D121F] border border-white/[0.05] rounded-xl p-6 text-center space-y-1 shadow-[0_4px_20px_rgba(0,0,0,0.2)] hover:border-cyan-500/20 transition-all duration-300"
             >
               <div className="text-2xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-200">
-                {/* এখানে কাউন্টার অ্যানিমেশনটি সেফটি ফ্যালব্যাকসহ রেন্ডার হচ্ছে */}
                 <AnimatedCounter target={stat.value} />
               </div>
               <div className="text-xs text-gray-400 font-medium tracking-wide uppercase">
@@ -74,7 +73,7 @@ export default function AboutPage() {
           ))}
         </section>
 
-        {/* Section 3: Vision & Mission (Split Layout) */}
+        {/* Section 3: Strategic Vision */}
         <section className="grid md:grid-cols-2 gap-8 items-center border-t border-white/[0.03] pt-16">
           <div className="space-y-4">
             <div className="flex items-center space-x-2 text-cyan-400">
@@ -94,8 +93,8 @@ export default function AboutPage() {
               tech stacks, and verify developer background asynchronously.
             </p>
           </div>
-          <div className="bg-[#0D121F] border border-white/[0.05] p-6 rounded-xl space-y-4 relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-cyan-500/[0.02] rounded-full blur-2xl" />
+          <div className="bg-[#0D121F] border border-white/[0.05] p-6 rounded-xl space-y-4 relative overflow-hidden group">
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-cyan-500/[0.03] rounded-full blur-2xl group-hover:bg-cyan-500/[0.08] transition-all" />
             <div className="text-xs text-cyan-400 font-mono">
               system_logs // 2026_architecture
             </div>
@@ -109,7 +108,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* Section 4: Core Values (Cards Grid) */}
+        {/* Section 4: Core Values */}
         <section className="space-y-8 border-t border-white/[0.03] pt-16">
           <div className="text-center space-y-2">
             <h3 className="text-xl sm:text-2xl font-bold tracking-tight">

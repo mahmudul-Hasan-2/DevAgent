@@ -9,37 +9,52 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import dotenv from "dotenv";
 dotenv.config();
-import express from "express";
 import cors from "cors";
+import express from "express";
 import { MongoClient, ObjectId } from "mongodb";
 import aiRoutes from "./routes/ai.routes.js";
 const app = express();
 app.use(cors());
 app.use(express.json());
-const client = new MongoClient(process.env.MONGO_URI);
-let dbInstance;
-const startServer = () => __awaiter(void 0, void 0, void 0, function* () {
-    yield client.connect();
-    dbInstance = client.db(process.env.DB_NAME || "devagent_db");
-    console.log("Database Connected!");
+const mongoUri = process.env.MONGO_URI;
+if (!mongoUri) {
+    throw new Error("MONGO_URI environment variable is missing.");
+}
+const client = new MongoClient(mongoUri);
+let dbInstance = null;
+// Lazy Database Connection Helper for Serverless & Express
+const getDb = () => __awaiter(void 0, void 0, void 0, function* () {
+    if (!dbInstance) {
+        yield client.connect();
+        dbInstance = client.db(process.env.DB_NAME || "devagent_db");
+        console.log("Database Connected!");
+    }
+    return dbInstance;
 });
-startServer();
 // ====================== ROUTES ======================
 // Health
 app.get("/", (req, res) => {
     res.send("DevAgent API is running 🚀");
 });
-// AI Routes (clean mount)
+// AI Routes
 app.use("/api/ai", aiRoutes);
 // ====================== PROJECT CRUD ======================
 app.get("/api/projects", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const projects = yield dbInstance.collection("projects").find({}).toArray();
-    res.json(projects);
+    try {
+        const db = yield getDb();
+        const projects = yield db.collection("projects").find({}).toArray();
+        res.json(projects);
+    }
+    catch (error) {
+        console.error("Fetch Projects Error:", error);
+        res.status(500).json({ error: "Failed to fetch projects." });
+    }
 }));
 app.get("/api/project/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { id } = req.params;
+    const id = req.params.id; // ← Fixed
     try {
-        const project = yield dbInstance
+        const db = yield getDb();
+        const project = yield db
             .collection("projects")
             .findOne({ _id: new ObjectId(id) });
         if (!project) {
@@ -52,8 +67,15 @@ app.get("/api/project/:id", (req, res) => __awaiter(void 0, void 0, void 0, func
     }
 }));
 app.post("/api/project", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield dbInstance.collection("projects").insertOne(Object.assign(Object.assign({}, req.body), { createdAt: new Date(), updatedAt: new Date() }));
-    res.status(201).json(result);
+    try {
+        const db = yield getDb();
+        const result = yield db.collection("projects").insertOne(Object.assign(Object.assign({}, req.body), { createdAt: new Date(), updatedAt: new Date() }));
+        res.status(201).json(result);
+    }
+    catch (error) {
+        console.error("Create Project Error:", error);
+        res.status(500).json({ error: "Failed to create project." });
+    }
 }));
 app.get("/api/projects/user", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -61,9 +83,10 @@ app.get("/api/projects/user", (req, res) => __awaiter(void 0, void 0, void 0, fu
         if (!userId) {
             return res.status(400).json({ error: "User ID is required." });
         }
-        const projects = yield dbInstance
+        const db = yield getDb();
+        const projects = yield db
             .collection("projects")
-            .find({ userId: userId })
+            .find({ userId: String(userId) })
             .toArray();
         res.status(200).json(projects);
     }
@@ -74,9 +97,10 @@ app.get("/api/projects/user", (req, res) => __awaiter(void 0, void 0, void 0, fu
 }));
 app.put("/api/project/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { id } = req.params;
+        const id = req.params.id; // ← Fixed
         const updatedData = Object.assign(Object.assign({}, req.body), { updatedAt: new Date() });
-        const result = yield dbInstance
+        const db = yield getDb();
+        const result = yield db
             .collection("projects")
             .updateOne({ _id: new ObjectId(id) }, { $set: updatedData });
         if (result.matchedCount === 0) {
@@ -94,8 +118,9 @@ app.put("/api/project/:id", (req, res) => __awaiter(void 0, void 0, void 0, func
 }));
 app.delete("/api/project/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { id } = req.params;
-        const result = yield dbInstance
+        const id = req.params.id; // ← Fixed
+        const db = yield getDb();
+        const result = yield db
             .collection("projects")
             .deleteOne({ _id: new ObjectId(id) });
         if (result.deletedCount === 0) {

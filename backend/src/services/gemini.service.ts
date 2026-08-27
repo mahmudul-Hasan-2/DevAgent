@@ -1,14 +1,14 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
+import Groq from "groq-sdk";
 dotenv.config();
 
-const apiKey = process.env.GEMINI_API_KEY || "";
+// ====================== CLIENTS ======================
+const geminiApiKey = process.env.GEMINI_API_KEY || "";
+const groqApiKey = process.env.GROQ_API_KEY || "";
 
-if (!apiKey) {
-  console.warn("WARNING: GEMINI_API_KEY is missing in environment variables!");
-}
-
-const genAI = new GoogleGenerativeAI(apiKey);
+const genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
+const groq = groqApiKey ? new Groq({ apiKey: groqApiKey }) : null;
 
 // ====================== TYPES ======================
 export interface ProjectBlueprint {
@@ -36,27 +36,34 @@ export interface ProjectBlueprint {
   successMetrics: string[];
 }
 
-// ====================== STRUCTURED GENERATION ======================
-export const generateProjectBlueprint = async (
-  idea: string
-): Promise<ProjectBlueprint> => {
-  try {
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash", // change to gemini-1.5-flash or gemini-2.5-flash if needed
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.7,
-      },
-    });
+// ====================== MARKDOWN CLEANER ======================
+const cleanMarkdown = (text: string): string => {
+  return text
+    .replace(/```[\w]*\n([\s\S]*?)```/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\*\*\*(.*?)\*\*\*/g, "$1")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/__(.*?)__/g, "$1")
+    .replace(/_(.*?)_/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
+    .replace(/^(-{3,}|_{3,}|\*{3,})$/gm, "")
+    .replace(/^>\s+/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+};
 
-    const prompt = `
-You are an elite software architect and senior product manager with 15+ years of experience.
+// ====================== PROMPT ======================
+const getBlueprintPrompt = (idea: string) => `
+You are an elite software architect and senior product manager.
 
-Generate a complete, production-ready project blueprint from this idea:
+Generate a complete, production-ready project blueprint for this idea:
 
 "${idea}"
 
-Return ONLY valid JSON. Do not include any markdown, code blocks, or extra text.
+Return ONLY valid JSON. No markdown, no code blocks, no extra text.
 The JSON must exactly match this structure:
 
 {
@@ -87,15 +94,73 @@ The JSON must exactly match this structure:
 }
 `;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+// ====================== GROQ GENERATION ======================
+const generateWithGroq = async (idea: string): Promise<ProjectBlueprint> => {
+  if (!groq) throw new Error("GROQ_API_KEY is missing");
 
-    const parsed = JSON.parse(text) as ProjectBlueprint;
-    return parsed;
-  } catch (error) {
-    console.error("Gemini Blueprint Generation Error:", error);
-    throw new Error("Failed to generate project blueprint");
+  const completion = await groq.chat.completions.create({
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are an elite software architect. Return ONLY valid JSON. No markdown.",
+      },
+      {
+        role: "user",
+        content: getBlueprintPrompt(idea),
+      },
+    ],
+    model: "llama-3.3-70b-versatile",
+    temperature: 0.7,
+    response_format: { type: "json_object" },
+  });
+
+  const text = completion.choices[0]?.message?.content || "{}";
+  return JSON.parse(text) as ProjectBlueprint;
+};
+
+// ====================== GEMINI GENERATION ======================
+const generateWithGemini = async (idea: string): Promise<ProjectBlueprint> => {
+  if (!genAI) throw new Error("GEMINI_API_KEY is missing");
+
+  const model = genAI.getGenerativeModel({
+    model: "gemini-3.6-flash",
+    generationConfig: {
+      responseMimeType: "application/json",
+      temperature: 0.7,
+    },
+  });
+
+  const result = await model.generateContent(getBlueprintPrompt(idea));
+  const text = result.response.text();
+  return JSON.parse(text) as ProjectBlueprint;
+};
+
+// ====================== MAIN BLUEPRINT (Auto Fallback) ======================
+export const generateProjectBlueprint = async (
+  idea: string
+): Promise<ProjectBlueprint> => {
+  // 1st try → Groq
+  if (groq) {
+    try {
+      console.log("Trying Groq...");
+      return await generateWithGroq(idea);
+    } catch (err) {
+      console.warn("Groq failed, trying Gemini...", err);
+    }
   }
+
+  // 2nd try → Gemini
+  if (genAI) {
+    try {
+      console.log("Trying Gemini...");
+      return await generateWithGemini(idea);
+    } catch (err) {
+      console.error("Gemini also failed:", err);
+    }
+  }
+
+  throw new Error("All AI providers failed. Please check your API keys.");
 };
 
 // ====================== CHAT ======================
@@ -104,38 +169,85 @@ export const chatWithAI = async (
   message: string,
   projectContext?: string
 ): Promise<string> => {
-  try {
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-    });
+  const systemPrompt = projectContext
+    ? `You are a senior software engineer helping with this project:
 
-    const systemPrompt = projectContext
-      ? `You are an expert AI co-pilot and senior developer helping with this specific project:\n\n${projectContext}\n\nAlways answer in the context of this project. Be concise, practical, and helpful.`
-      : `You are an expert AI developer co-pilot. Be helpful, practical, and concise.`;
+${projectContext}
 
-    const chat = model.startChat({
-      history: [
-        {
-          role: "user",
-          parts: [{ text: systemPrompt }],
-        },
-        {
-          role: "model",
-          parts: [{ text: "Understood. I'm ready to help." }],
-        },
-        ...history,
-      ],
-    });
+Rules:
+- Be concise and practical
+- Give direct answers and code when needed
+- Do NOT use markdown headers, bold, or heavy formatting
+- Use plain text only
+- Talk like a helpful senior developer`
+    : `You are a senior software engineer and AI co-pilot.
 
-    const result = await chat.sendMessage(message);
-    return result.response.text();
-  } catch (error) {
-    console.error("Gemini Chat Error:", error);
-    throw new Error("AI Chat Failed");
+Rules:
+- Be concise and practical
+- Give direct answers and code when needed
+- Do NOT use markdown headers, bold, or heavy formatting
+- Use plain text only
+- Talk like a helpful senior developer`;
+
+  // Prefer Groq
+  if (groq) {
+    try {
+      const messages: any[] = [
+        { role: "system", content: systemPrompt },
+        ...history.map((h) => ({
+          role: h.role === "model" ? "assistant" : "user",
+          content: h.parts[0]?.text || "",
+        })),
+        { role: "user", content: message },
+      ];
+
+      const completion = await groq.chat.completions.create({
+        messages,
+        model: "llama-3.3-70b-versatile",
+        temperature: 0.6,
+        max_tokens: 1024,
+      });
+
+      const reply = completion.choices[0]?.message?.content || "No response";
+      return cleanMarkdown(reply);
+    } catch (err) {
+      console.warn("Groq chat failed, trying Gemini...", err);
+    }
   }
+
+  // Fallback Gemini
+  if (genAI) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: "gemini-3.6-flash",
+        generationConfig: {
+          temperature: 0.6,
+          maxOutputTokens: 1024,
+        },
+      });
+
+      const chat = model.startChat({
+        history: [
+          { role: "user", parts: [{ text: systemPrompt }] },
+          {
+            role: "model",
+            parts: [{ text: "Got it. Plain text answers only." }],
+          },
+          ...history,
+        ],
+      });
+
+      const result = await chat.sendMessage(message);
+      return cleanMarkdown(result.response.text());
+    } catch (err) {
+      console.error("Gemini chat failed:", err);
+    }
+  }
+
+  throw new Error("No AI provider available");
 };
 
-// Keep old function for backward compatibility (optional)
+// ====================== BACKWARD COMPATIBILITY ======================
 export const generateAIContent = async (prompt: string) => {
   const blueprint = await generateProjectBlueprint(prompt);
   return blueprint.fullDescription;

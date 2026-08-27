@@ -1,13 +1,12 @@
 "use client";
 
-import React from "react";
+import { ArrowRight, Code2, Cpu, Sparkles, Terminal, Wand2 } from "lucide-react";
 import Link from "next/link";
-import { Terminal, ArrowRight, Sparkles, Code2, Cpu } from "lucide-react";
 
 export default function HeroBanner() {
   return (
     <section className="relative w-full bg-[#0A0D14] text-white pt-28 pb-24 overflow-hidden flex items-center justify-center">
-      {/* এআই স্টাইল ডিপ ডার্ক গ্লো ইফেক্টস */}
+      {/* AI Deep Dark Glow Effects */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-cyan-500/[0.03] rounded-full blur-[120px] pointer-events-none animate-pulse" />
       <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-purple-500/[0.02] rounded-full blur-[100px] pointer-events-none" />
 
@@ -36,8 +35,16 @@ export default function HeroBanner() {
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
           <Link
+            href="/generate"
+            className="w-full sm:w-auto flex items-center justify-center space-x-2 px-6 py-2.5 rounded-lg text-xs font-medium bg-gradient-to-r from-cyan-500 to-blue-600 border border-cyan-400/30 text-white hover:from-cyan-400 hover:to-blue-500 transition-all duration-150 shadow-[0_0_20px_rgba(6,182,212,0.25)]"
+          >
+            <Wand2 className="w-3.5 h-3.5" />
+            <span>Generate Blueprint</span>
+          </Link>
+
+          <Link
             href="/projects"
-            className="w-full sm:w-auto flex items-center justify-center space-x-2 px-6 py-2.5 rounded-lg text-xs font-medium bg-cyan-600 border border-cyan-400/20 text-white hover:bg-cyan-500 transition-all duration-150 shadow-[0_0_20px_rgba(6,182,212,0.15)]"
+            className="w-full sm:w-auto flex items-center justify-center space-x-2 px-6 py-2.5 rounded-lg text-xs font-medium bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-900/50 hover:text-white transition-all duration-150"
           >
             <span>Explore Projects</span>
             <ArrowRight className="w-3.5 h-3.5" />

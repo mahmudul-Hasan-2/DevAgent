@@ -1,9 +1,9 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import express, { Request, Response } from "express";
 import cors from "cors";
-import { MongoClient, ObjectId, Db } from "mongodb";
+import express, { Request, Response } from "express";
+import { Db, MongoClient, ObjectId } from "mongodb";
 import aiRoutes from "./routes/ai.routes.js";
 
 const app = express();
@@ -11,15 +11,23 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const client = new MongoClient(process.env.MONGO_URI as string);
-let dbInstance: Db;
+const mongoUri = process.env.MONGO_URI;
+if (!mongoUri) {
+  throw new Error("MONGO_URI environment variable is missing.");
+}
 
-const startServer = async () => {
-  await client.connect();
-  dbInstance = client.db(process.env.DB_NAME || "devagent_db");
-  console.log("Database Connected!");
+const client = new MongoClient(mongoUri);
+let dbInstance: Db | null = null;
+
+// Lazy Database Connection Helper for Serverless & Express
+const getDb = async (): Promise<Db> => {
+  if (!dbInstance) {
+    await client.connect();
+    dbInstance = client.db(process.env.DB_NAME || "devagent_db");
+    console.log("Database Connected!");
+  }
+  return dbInstance;
 };
-startServer();
 
 // ====================== ROUTES ======================
 
@@ -28,21 +36,28 @@ app.get("/", (req, res) => {
   res.send("DevAgent API is running 🚀");
 });
 
-// AI Routes (clean mount)
+// AI Routes
 app.use("/api/ai", aiRoutes);
 
 // ====================== PROJECT CRUD ======================
 
-app.get("/api/projects", async (req, res) => {
-  const projects = await dbInstance.collection("projects").find({}).toArray();
-  res.json(projects);
+app.get("/api/projects", async (req: Request, res: Response) => {
+  try {
+    const db = await getDb();
+    const projects = await db.collection("projects").find({}).toArray();
+    res.json(projects);
+  } catch (error) {
+    console.error("Fetch Projects Error:", error);
+    res.status(500).json({ error: "Failed to fetch projects." });
+  }
 });
 
-app.get("/api/project/:id", async (req, res) => {
-  const { id } = req.params;
+app.get("/api/project/:id", async (req: Request, res: Response) => {
+  const id = req.params.id as string; // ← Fixed
 
   try {
-    const project = await dbInstance
+    const db = await getDb();
+    const project = await db
       .collection("projects")
       .findOne({ _id: new ObjectId(id) });
 
@@ -55,27 +70,33 @@ app.get("/api/project/:id", async (req, res) => {
   }
 });
 
-app.post("/api/project", async (req, res) => {
-  const result = await dbInstance.collection("projects").insertOne({
-    ...req.body,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
-  res.status(201).json(result);
+app.post("/api/project", async (req: Request, res: Response) => {
+  try {
+    const db = await getDb();
+    const result = await db.collection("projects").insertOne({
+      ...req.body,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    res.status(201).json(result);
+  } catch (error) {
+    console.error("Create Project Error:", error);
+    res.status(500).json({ error: "Failed to create project." });
+  }
 });
 
-app.get("/api/projects/user", async (req, res) => {
+app.get("/api/projects/user", async (req: Request, res: Response) => {
   try {
     const { userId } = req.query;
 
-    
     if (!userId) {
       return res.status(400).json({ error: "User ID is required." });
     }
 
-    const projects = await dbInstance
+    const db = await getDb();
+    const projects = await db
       .collection("projects")
-      .find({ userId: userId })
+      .find({ userId: String(userId) })
       .toArray();
 
     res.status(200).json(projects);
@@ -85,12 +106,13 @@ app.get("/api/projects/user", async (req, res) => {
   }
 });
 
-app.put("/api/project/:id", async (req, res) => {
+app.put("/api/project/:id", async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string; // ← Fixed
     const updatedData = { ...req.body, updatedAt: new Date() };
 
-    const result = await dbInstance
+    const db = await getDb();
+    const result = await db
       .collection("projects")
       .updateOne({ _id: new ObjectId(id) }, { $set: updatedData });
 
@@ -108,11 +130,12 @@ app.put("/api/project/:id", async (req, res) => {
   }
 });
 
-app.delete("/api/project/:id", async (req, res) => {
+app.delete("/api/project/:id", async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string; // ← Fixed
 
-    const result = await dbInstance
+    const db = await getDb();
+    const result = await db
       .collection("projects")
       .deleteOne({ _id: new ObjectId(id) });
 
