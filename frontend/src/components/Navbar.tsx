@@ -85,15 +85,14 @@ export default function Navbar() {
     : mainRoutes;
 
   const isWorkspaceActive = workspaceRoutes.some(
-    (route) => pathname === route.path
+    (route) => pathname === route.path,
   );
 
   return (
     <>
       {/* Background Blur Glow */}
-      <div className="fixed inset-x-0 top-0 h-24 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none z-40" />
 
-      <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#090B11]/75 backdrop-blur-2xl supports-[backdrop-filter]:bg-[#090B11]/60">
+      <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#0F172A] backdrop-blur-2xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Logo */}
           <Link
@@ -171,7 +170,7 @@ export default function Navbar() {
 
                 {/* Dropdown Menu */}
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-3 w-48 rounded-2xl border border-white/10 bg-[#090B11]/95 p-2 shadow-2xl backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-150 z-50">
+                  <div className="absolute right-0 mt-3 w-48 rounded-2xl border border-white/10 bg-[#0F172A] p-2 shadow-2xl backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-150 z-50">
                     <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-500 border-b border-white/5 mb-1">
                       Workspace Tools
                     </div>
@@ -211,7 +210,7 @@ export default function Navbar() {
                 <div className="flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
                   <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-cyan-500/15 text-cyan-300">
                     <User className="h-4 w-4" />
-                    <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border border-[#090B11] bg-emerald-400" />
+                    <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border border-[#0F172A] bg-emerald-400" />
                   </div>
 
                   <div className="leading-tight">
@@ -235,14 +234,14 @@ export default function Navbar() {
               <>
                 <Link
                   href="/login"
-                  className="rounded-full px-4 py-2 text-sm font-medium text-gray-300 transition hover:bg-white/5 hover:text-white"
+                  className="rounded-full px-4 py-2 text-sm font-medium text-gray-300 transition bg-white/10 hover:bg-white/5 hover:text-white"
                 >
                   Sign In
                 </Link>
 
                 <Link
                   href="/register"
-                  className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-sky-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all duration-300 hover:scale-[1.03] hover:shadow-cyan-500/40"
+                  className="group flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-gray-300 transition bg-white/10 hover:bg-white/5 hover:text-white"
                 >
                   <Sparkles className="h-4 w-4 group-hover:rotate-12 transition-transform" />
                   Get Started
@@ -268,21 +267,19 @@ export default function Navbar() {
               : "max-h-0 opacity-0 pointer-events-none"
           }`}
         >
-          <div className="border-t border-white/10 bg-[#090B11]/95 backdrop-blur-2xl px-4 py-4">
+          <div className="border-t border-white/10 bg-[#0F172A] backdrop-blur-2xl px-4 py-4">
             {isLoggedIn && (
               <div className="mb-5 flex items-center gap-3 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-3">
                 <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-cyan-500/20 text-cyan-300">
                   <User className="h-5 w-5" />
-                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#090B11] bg-emerald-400" />
+                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#0F172A] bg-emerald-400" />
                 </div>
 
                 <div>
                   <p className="font-semibold text-white">
                     {session.user?.name}
                   </p>
-                  <p className="text-xs text-cyan-300">
-                    AI Workspace Active
-                  </p>
+                  <p className="text-xs text-cyan-300">AI Workspace Active</p>
                 </div>
               </div>
             )}

@@ -34,7 +34,7 @@ export default function RootLayout({
           <Navbar />
 
           {/* মেইন কন্টেন্ট এরিয়া */}
-          <main className="flex-grow mb-10">{children}</main>
+          <main className="flex-grow mb-0 py-0">{children}</main>
 
           {/* গ্লোবাল ফুটার */}
           <Footer />

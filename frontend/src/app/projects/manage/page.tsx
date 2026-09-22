@@ -19,7 +19,8 @@ import React, { useState } from "react";
 import { toast } from "sonner";
 
 export default function ManageProjectsPage() {
-  const { data: session, isPending: isSessionPending } = authClient.useSession();
+  const { data: session, isPending: isSessionPending } =
+    authClient.useSession();
   const userId = session?.user?.id;
 
   // Edit Modal State
@@ -52,7 +53,7 @@ export default function ManageProjectsPage() {
     queryFn: async () => {
       if (!userId) return [];
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/projects/user?userId=${userId}`
+        `${process.env.NEXT_PUBLIC_API_URL}/projects/user?userId=${userId}`,
       );
       if (!res.ok) throw new Error("Failed to fetch user projects");
       return res.json();
@@ -65,7 +66,7 @@ export default function ManageProjectsPage() {
   const handleOpenEditModal = async (id: string) => {
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/project/${id}`
+        `${process.env.NEXT_PUBLIC_API_URL}/project/${id}`,
       );
       if (!res.ok) throw new Error("Failed to fetch project details");
       const projectData = await res.json();
@@ -92,7 +93,7 @@ export default function ManageProjectsPage() {
   const handleEditChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     setEditFormData({ ...editFormData, [e.target.name]: e.target.value });
   };
@@ -127,7 +128,7 @@ export default function ManageProjectsPage() {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       if (res.ok) {
@@ -158,7 +159,7 @@ export default function ManageProjectsPage() {
         `${process.env.NEXT_PUBLIC_API_URL}/project/${projectToDelete._id}`,
         {
           method: "DELETE",
-        }
+        },
       );
       if (res.ok) {
         toast.success("Project deleted successfully!");
@@ -199,7 +200,7 @@ export default function ManageProjectsPage() {
           </div>
           <Link
             href="/projects/add"
-            className="inline-flex items-center justify-center text-xs font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 px-4 py-2.5 rounded-xl transition-all shadow-lg hover:shadow-cyan-500/20"
+            className="inline-flex items-center justify-center text-xs font-semibold bg-gradient-to-r from-cyan-800 to-blue-800 text-white px-4 py-2.5 rounded-xl transition-all shadow-lg hover:shadow-cyan-500/20"
           >
             <Plus className="w-4 h-4 mr-1.5" /> Post New Project
           </Link>
@@ -213,7 +214,8 @@ export default function ManageProjectsPage() {
               You haven't posted any deployments yet.
             </p>
             <p className="text-slate-600 text-xs">
-              Click the "Post New Project" button above to publish your first agent.
+              Click the "Post New Project" button above to publish your first
+              agent.
             </p>
           </div>
         ) : (
@@ -285,7 +287,9 @@ export default function ManageProjectsPage() {
 
             <form onSubmit={handleUpdateSubmit} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs text-slate-300 font-medium">Title</label>
+                <label className="text-xs text-slate-300 font-medium">
+                  Title
+                </label>
                 <input
                   name="title"
                   value={editFormData.title}
@@ -296,7 +300,9 @@ export default function ManageProjectsPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-slate-300 font-medium">Category</label>
+                <label className="text-xs text-slate-300 font-medium">
+                  Category
+                </label>
                 <select
                   name="category"
                   value={editFormData.category}
@@ -311,7 +317,9 @@ export default function ManageProjectsPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-slate-300 font-medium">Short Summary</label>
+                <label className="text-xs text-slate-300 font-medium">
+                  Short Summary
+                </label>
                 <input
                   name="shortDescription"
                   value={editFormData.shortDescription}
@@ -322,7 +330,9 @@ export default function ManageProjectsPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-slate-300 font-medium">Full Description</label>
+                <label className="text-xs text-slate-300 font-medium">
+                  Full Description
+                </label>
                 <textarea
                   name="fullDescription"
                   value={editFormData.fullDescription}
@@ -335,7 +345,9 @@ export default function ManageProjectsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs text-slate-300 font-medium">Min Budget ($)</label>
+                  <label className="text-xs text-slate-300 font-medium">
+                    Min Budget ($)
+                  </label>
                   <input
                     name="minBudget"
                     type="number"
@@ -345,7 +357,9 @@ export default function ManageProjectsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-slate-300 font-medium">Max Budget ($)</label>
+                  <label className="text-xs text-slate-300 font-medium">
+                    Max Budget ($)
+                  </label>
                   <input
                     name="maxBudget"
                     type="number"
@@ -357,7 +371,9 @@ export default function ManageProjectsPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-slate-300 font-medium">Skills (Comma Separated)</label>
+                <label className="text-xs text-slate-300 font-medium">
+                  Skills (Comma Separated)
+                </label>
                 <input
                   name="requiredSkills"
                   value={editFormData.requiredSkills}
@@ -367,7 +383,9 @@ export default function ManageProjectsPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-slate-300 font-medium">Cover Image URL</label>
+                <label className="text-xs text-slate-300 font-medium">
+                  Cover Image URL
+                </label>
                 <input
                   name="imageUrl"
                   value={editFormData.imageUrl}

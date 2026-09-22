@@ -2,12 +2,15 @@ import BlueprintGenerator from "@/components/BlueprintGenerator";
 
 export default function GeneratePage() {
   return (
-    <main className="min-h-screen py-10 px-4">
+    <main className="min-h-screen py-10 px-4 bg-[#0F172A]">
       <div className="max-w-5xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">AI Project Blueprint Generator</h1>
-          <p className="text-muted-foreground mt-2">
-            Describe your idea and get a complete structured project plan powered by AI.
+          <h1 className="text-3xl text-white font-bold">
+            AI Project Blueprint Generator
+          </h1>
+          <p className="text-muted-foreground  text-white/60 mt-2">
+            Describe your idea and get a complete structured project plan
+            powered by AI.
           </p>
         </div>
 
