@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "@/lib/auth-client";
-import { Code2, DollarSign, Image as ImageIcon, Loader2, Send, Sparkles } from "lucide-react";
+import { Code2, Image as ImageIcon, Loader2, Send, Sparkles, Activity } from "lucide-react";
 import React, { useState } from "react";
 import { toast } from "sonner";
 
@@ -10,14 +10,13 @@ export default function AddNewProjectPage() {
   const user = session?.user;
 
   const [formData, setFormData] = useState({
-    title: "",
+    name: "",
     category: "AI Agent",
+    status: "planning",
     shortDescription: "",
-    fullDescription: "",
-    minBudget: "",
-    maxBudget: "",
-    requiredSkills: "",
-    imageUrl: "",
+    description: "",
+    tags: "",
+    image: "",
   });
 
   const [isAiGenerating, setIsAiGenerating] = useState(false);
@@ -32,8 +31,8 @@ export default function AddNewProjectPage() {
   };
 
   const handleGenerateAI = async () => {
-    if (!formData.title.trim()) {
-      toast.error("Please enter a project title first.");
+    if (!formData.name.trim()) {
+      toast.error("Please enter a project name first.");
       return;
     }
 
@@ -44,13 +43,13 @@ export default function AddNewProjectPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: formData.title }),
+          body: JSON.stringify({ name: formData.name }),
         }
       );
       const data = await response.json();
 
       if (response.ok && data.content) {
-        setFormData((prev) => ({ ...prev, fullDescription: data.content }));
+        setFormData((prev) => ({ ...prev, description: data.content }));
         toast.success("AI description generated successfully!");
       } else {
         toast.error(data.message || "Failed to generate AI content.");
@@ -74,19 +73,16 @@ export default function AddNewProjectPage() {
     setIsSubmitting(true);
 
     const payload = {
-      title: formData.title.trim(),
+      name: formData.name.trim(),
       category: formData.category,
+      status: formData.status,
       shortDescription: formData.shortDescription.trim(),
-      fullDescription: formData.fullDescription.trim(),
-      estimatedBudgetRange: {
-        min: Number(formData.minBudget) || 0,
-        max: Number(formData.maxBudget) || 0,
-      },
-      requiredSkills: formData.requiredSkills
-        ? formData.requiredSkills.split(",").map((s) => s.trim()).filter(Boolean)
+      description: formData.description.trim(),
+      tags: formData.tags
+        ? formData.tags.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean)
         : [],
-      imageUrl: formData.imageUrl.trim(),
-      userId: user.id,
+      image: formData.image.trim(),
+      createdBy: user.id,
     };
 
     try {
@@ -102,14 +98,13 @@ export default function AddNewProjectPage() {
       if (response.ok) {
         toast.success("Project published successfully!");
         setFormData({
-          title: "",
+          name: "",
           category: "AI Agent",
+          status: "planning",
           shortDescription: "",
-          fullDescription: "",
-          minBudget: "",
-          maxBudget: "",
-          requiredSkills: "",
-          imageUrl: "",
+          description: "",
+          tags: "",
+          image: "",
         });
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -123,7 +118,7 @@ export default function AddNewProjectPage() {
     }
   };
 
-  const skillList = formData.requiredSkills
+  const tagList = formData.tags
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
@@ -149,19 +144,19 @@ export default function AddNewProjectPage() {
           onSubmit={handleSubmit}
           className="bg-[#0A0D14]/90 border border-slate-800/80 p-6 sm:p-8 rounded-2xl shadow-2xl space-y-6 backdrop-blur-md"
         >
-          {/* Title & Category */}
+          {/* Project Name, Category & Status */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="sm:col-span-2 space-y-1.5">
+            <div className="sm:col-span-1 space-y-1.5">
               <label className="text-xs font-medium text-slate-300">
-                Project Title <span className="text-cyan-400">*</span>
+                Project Name <span className="text-cyan-400">*</span>
               </label>
               <input
-                name="title"
+                name="name"
                 type="text"
-                placeholder="e.g. Autonomous Customer Support Agent"
+                placeholder="e.g. Real-time Collaboration Whiteboard"
                 className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-cyan-500/80 focus:ring-1 focus:ring-cyan-500/30 transition-all placeholder-slate-600"
                 onChange={handleInputChange}
-                value={formData.title}
+                value={formData.name}
                 required
               />
             </div>
@@ -180,6 +175,24 @@ export default function AddNewProjectPage() {
                 <option value="AI Agent">AI Agent</option>
                 <option value="Web App">Web App</option>
                 <option value="Automation">Automation</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-300 flex items-center gap-1">
+                <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                Status <span className="text-cyan-400">*</span>
+              </label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleInputChange}
+                className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-cyan-500/80 transition-colors"
+                required
+              >
+                <option value="planning">Planning</option>
+                <option value="in-progress">In Progress</option>
+                <option value="active">Active</option>
               </select>
             </div>
           </div>
@@ -204,7 +217,7 @@ export default function AddNewProjectPage() {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium text-slate-300">
-                Detailed Specifications <span className="text-cyan-400">*</span>
+                Detailed Description <span className="text-cyan-400">*</span>
               </label>
               <button
                 type="button"
@@ -226,8 +239,8 @@ export default function AddNewProjectPage() {
               </button>
             </div>
             <textarea
-              name="fullDescription"
-              value={formData.fullDescription}
+              name="description"
+              value={formData.description}
               placeholder="Describe scope, features, deliverables, and technical requirements..."
               className="w-full bg-slate-950/80 border border-slate-800 rounded-lg p-3.5 text-sm text-slate-100 h-36 focus:outline-none focus:border-cyan-500/80 focus:ring-1 focus:ring-cyan-500/30 transition-all placeholder-slate-600 leading-relaxed resize-y"
               onChange={handleInputChange}
@@ -235,56 +248,30 @@ export default function AddNewProjectPage() {
             />
           </div>
 
-          {/* Budget Range */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-300 flex items-center gap-1">
-              <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
-              Estimated Budget Range (USD)
-            </label>
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                name="minBudget"
-                type="number"
-                placeholder="Min (e.g. 1000)"
-                className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-cyan-500/80 transition-all placeholder-slate-600"
-                onChange={handleInputChange}
-                value={formData.minBudget}
-              />
-              <input
-                name="maxBudget"
-                type="number"
-                placeholder="Max (e.g. 5000)"
-                className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-cyan-500/80 transition-all placeholder-slate-600"
-                onChange={handleInputChange}
-                value={formData.maxBudget}
-              />
-            </div>
-          </div>
-
-          {/* Required Skills & Tag Live Preview */}
+          {/* Tags & Live Tag Preview */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-slate-300 flex items-center gap-1">
               <Code2 className="w-3.5 h-3.5 text-cyan-400" />
-              Required Skills (Comma Separated)
+              Project Tags (Comma Separated)
             </label>
             <input
-              name="requiredSkills"
+              name="tags"
               type="text"
-              placeholder="Next.js, Python, LangChain, OpenAI API"
+              placeholder="collaboration, whiteboard, realtime, ai"
               className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-cyan-500/80 transition-all placeholder-slate-600"
               onChange={handleInputChange}
-              value={formData.requiredSkills}
+              value={formData.tags}
             />
 
             {/* Tag preview */}
-            {skillList.length > 0 && (
+            {tagList.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-1">
-                {skillList.map((skill, index) => (
+                {tagList.map((tag, index) => (
                   <span
                     key={index}
                     className="text-[10px] font-mono bg-cyan-950/60 border border-cyan-800/40 text-cyan-300 px-2 py-0.5 rounded"
                   >
-                    {skill}
+                    #{tag}
                   </span>
                 ))}
               </div>
@@ -298,12 +285,12 @@ export default function AddNewProjectPage() {
               Cover Image URL
             </label>
             <input
-              name="imageUrl"
+              name="image"
               type="url"
               placeholder="https://images.unsplash.com/photo-..."
               className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-cyan-500/80 transition-all placeholder-slate-600"
               onChange={handleInputChange}
-              value={formData.imageUrl}
+              value={formData.image}
             />
           </div>
 
