@@ -2,9 +2,27 @@ import dotenv from "dotenv";
 dotenv.config();
 import Groq from "groq-sdk";
 
-// ====================== CLIENT ======================
-const groqApiKey = process.env.GROQ_API_KEY || "";
-const groq = groqApiKey ? new Groq({ apiKey: groqApiKey }) : null;
+// ====================== CLIENT (Lazy - প্রতিবার নতুন করে পড়বে) ======================
+const getGroqClient = () => {
+  const apiKey = process.env.GROQ_API_KEY;
+
+  if (!apiKey || apiKey.trim() === "") {
+    console.error("❌ GROQ_API_KEY missing at runtime");
+    console.error(
+      "Env keys containing GROQ/API:",
+      Object.keys(process.env).filter(
+        (k) =>
+          k.toUpperCase().includes("GROQ") || k.toUpperCase().includes("API"),
+      ),
+    );
+    throw new Error(
+      "GROQ_API_KEY is missing. Add it in Vercel → Settings → Environment Variables and Redeploy.",
+    );
+  }
+
+  console.log("✅ GROQ_API_KEY found, length:", apiKey.length);
+  return new Groq({ apiKey: apiKey.trim() });
+};
 
 // ====================== TYPES ======================
 export interface ProjectBlueprint {
@@ -94,11 +112,7 @@ The JSON must exactly match this structure:
 export const generateProjectBlueprint = async (
   idea: string,
 ): Promise<ProjectBlueprint> => {
-  if (!groq) {
-    throw new Error(
-      "GROQ_API_KEY is missing. Please add it to your .env file.",
-    );
-  }
+  const groq = getGroqClient(); // ← এখানে পড়ছে
 
   const completion = await groq.chat.completions.create({
     messages: [
@@ -112,7 +126,7 @@ export const generateProjectBlueprint = async (
         content: getBlueprintPrompt(idea),
       },
     ],
-    model: "llama-3.3-70b-versatile", // চাইলে "llama-3.1-8b-instant" বা "mixtral-8x7b-32768"ও ব্যবহার করতে পারো
+    model: "llama-3.3-70b-versatile",
     temperature: 0.7,
     response_format: { type: "json_object" },
   });
@@ -127,11 +141,7 @@ export const chatWithAI = async (
   message: string,
   projectContext?: string,
 ): Promise<string> => {
-  if (!groq) {
-    throw new Error(
-      "GROQ_API_KEY is missing. Please add it to your .env file.",
-    );
-  }
+  const groq = getGroqClient(); // ← এখানে পড়ছে
 
   const systemPrompt = projectContext
     ? `You are a senior software engineer helping with this project:
