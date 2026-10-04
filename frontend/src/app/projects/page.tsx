@@ -191,52 +191,52 @@ export default function ExploreProjectsPage() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
               {projects.map((project: any) => (
-                <Link
-                  key={project._id}
-                  href={`/projects/${project._id}`}
-                  className="group bg-[#0A0D14]/90 border border-slate-800/70 rounded-xl p-5 flex flex-col justify-between hover:border-cyan-500/40 hover:bg-[#0E131F] transition-all duration-250 shadow-lg hover:shadow-[0_0_24px_rgba(6,182,212,0.1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
-                >
-                  <div>
-                    <div className="flex justify-between items-start gap-2 mb-3">
-                      <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-800/40 text-cyan-400">
-                        {project.category || "General"}
-                      </span>
-                      <div className="flex items-center text-xs font-mono font-medium text-emerald-400 bg-emerald-950/40 border border-emerald-900/40 px-2 py-0.5 rounded shrink-0">
-                        <DollarSign className="w-3 h-3" aria-hidden="true" />
-                        {project.estimatedBudgetRange?.min ?? 0} –{" "}
-                        {project.estimatedBudgetRange?.max ?? 0}
-                      </div>
-                    </div>
+  <Link
+    key={project._id || project.name}
+    href={`/projects/${project._id}`}
+    className="group bg-[#0A0D14]/90 border border-slate-800/70 rounded-xl p-5 flex flex-col justify-between hover:border-cyan-500/40 hover:bg-[#0E131F] transition-all duration-250 shadow-lg hover:shadow-[0_0_24px_rgba(6,182,212,0.1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
+  >
+    <div>
+      <div className="flex justify-between items-start gap-2 mb-3">
+        <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-800/40 text-cyan-400">
+          {project.category || "General"}
+        </span>
+        {project.status && (
+          <div className="flex items-center text-xs font-mono font-medium text-emerald-400 bg-emerald-950/40 border border-emerald-900/40 px-2 py-0.5 rounded shrink-0 uppercase">
+            {project.status}
+          </div>
+        )}
+      </div>
 
-                    <h2 className="text-sm font-semibold text-slate-200 group-hover:text-cyan-300 transition-colors line-clamp-1">
-                      {project.title}
-                    </h2>
-                    <p className="text-xs text-slate-400 mt-2 line-clamp-3 leading-relaxed">
-                      {project.shortDescription || project.fullDescription}
-                    </p>
-                  </div>
+      <h2 className="text-sm font-semibold text-slate-200 group-hover:text-cyan-300 transition-colors line-clamp-1">
+        {project.name}
+      </h2>
+      <p className="text-xs text-slate-400 mt-2 line-clamp-3 leading-relaxed">
+        {project.shortDescription || project.description}
+      </p>
+    </div>
 
-                  <div className="mt-4 pt-4 border-t border-slate-800/80">
-                    <div className="flex flex-wrap gap-1.5">
-                      {project.requiredSkills
-                        ?.slice(0, 3)
-                        .map((skill: string, i: number) => (
-                          <span
-                            key={i}
-                            className="text-[10px] font-mono bg-slate-900/90 border border-slate-800 text-slate-400 px-2 py-0.5 rounded"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                      {project.requiredSkills?.length > 3 && (
-                        <span className="text-[10px] text-slate-500 font-mono self-center">
-                          +{project.requiredSkills.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              ))}
+    <div className="mt-4 pt-4 border-t border-slate-800/80">
+      <div className="flex flex-wrap gap-1.5">
+        {project.tags
+          ?.slice(0, 3)
+          .map((tag: string, i: number) => (
+            <span
+              key={i}
+              className="text-[10px] font-mono bg-slate-900/90 border border-slate-800 text-slate-400 px-2 py-0.5 rounded"
+            >
+              #{tag}
+            </span>
+          ))}
+        {project.tags?.length > 3 && (
+          <span className="text-[10px] text-slate-500 font-mono self-center">
+            +{project.tags.length - 3}
+          </span>
+        )}
+      </div>
+    </div>
+  </Link>
+))}
             </div>
 
             {totalPages > 1 && (
