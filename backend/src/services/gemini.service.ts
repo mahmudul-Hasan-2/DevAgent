@@ -1,6 +1,6 @@
-import Groq from "groq-sdk";
 import dotenv from "dotenv";
 dotenv.config();
+import Groq from "groq-sdk";
 
 // ====================== CLIENT ======================
 const groqApiKey = process.env.GROQ_API_KEY || "";
@@ -92,10 +92,12 @@ The JSON must exactly match this structure:
 
 // ====================== GROQ GENERATION ======================
 export const generateProjectBlueprint = async (
-  idea: string
+  idea: string,
 ): Promise<ProjectBlueprint> => {
   if (!groq) {
-    throw new Error("GROQ_API_KEY is missing. Please add it to your .env file.");
+    throw new Error(
+      "GROQ_API_KEY is missing. Please add it to your .env file.",
+    );
   }
 
   const completion = await groq.chat.completions.create({
@@ -123,10 +125,12 @@ export const generateProjectBlueprint = async (
 export const chatWithAI = async (
   history: { role: "user" | "model"; parts: { text: string }[] }[],
   message: string,
-  projectContext?: string
+  projectContext?: string,
 ): Promise<string> => {
   if (!groq) {
-    throw new Error("GROQ_API_KEY is missing. Please add it to your .env file.");
+    throw new Error(
+      "GROQ_API_KEY is missing. Please add it to your .env file.",
+    );
   }
 
   const systemPrompt = projectContext

@@ -6,6 +6,8 @@ import express, { Request, Response } from "express";
 import { Db, MongoClient, ObjectId } from "mongodb";
 import aiRoutes from "./routes/ai.routes.js";
 
+console.log(process.env.GROQ_API_KEY);
+
 const app = express();
 
 app.use(cors());
