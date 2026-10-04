@@ -1,13 +1,9 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import dotenv from "dotenv";
 import Groq from "groq-sdk";
+import dotenv from "dotenv";
 dotenv.config();
 
-// ====================== CLIENTS ======================
-const geminiApiKey = process.env.GEMINI_API_KEY || "";
+// ====================== CLIENT ======================
 const groqApiKey = process.env.GROQ_API_KEY || "";
-
-const genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
 const groq = groqApiKey ? new Groq({ apiKey: groqApiKey }) : null;
 
 // ====================== TYPES ======================
@@ -95,8 +91,12 @@ The JSON must exactly match this structure:
 `;
 
 // ====================== GROQ GENERATION ======================
-const generateWithGroq = async (idea: string): Promise<ProjectBlueprint> => {
-  if (!groq) throw new Error("GROQ_API_KEY is missing");
+export const generateProjectBlueprint = async (
+  idea: string
+): Promise<ProjectBlueprint> => {
+  if (!groq) {
+    throw new Error("GROQ_API_KEY is missing. Please add it to your .env file.");
+  }
 
   const completion = await groq.chat.completions.create({
     messages: [
@@ -110,7 +110,7 @@ const generateWithGroq = async (idea: string): Promise<ProjectBlueprint> => {
         content: getBlueprintPrompt(idea),
       },
     ],
-    model: "llama-3.3-70b-versatile",
+    model: "llama-3.3-70b-versatile", // চাইলে "llama-3.1-8b-instant" বা "mixtral-8x7b-32768"ও ব্যবহার করতে পারো
     temperature: 0.7,
     response_format: { type: "json_object" },
   });
@@ -119,56 +119,16 @@ const generateWithGroq = async (idea: string): Promise<ProjectBlueprint> => {
   return JSON.parse(text) as ProjectBlueprint;
 };
 
-// ====================== GEMINI GENERATION ======================
-const generateWithGemini = async (idea: string): Promise<ProjectBlueprint> => {
-  if (!genAI) throw new Error("GEMINI_API_KEY is missing");
-
-  const model = genAI.getGenerativeModel({
-    model: "gemini-3.6-flash",
-    generationConfig: {
-      responseMimeType: "application/json",
-      temperature: 0.7,
-    },
-  });
-
-  const result = await model.generateContent(getBlueprintPrompt(idea));
-  const text = result.response.text();
-  return JSON.parse(text) as ProjectBlueprint;
-};
-
-// ====================== MAIN BLUEPRINT (Auto Fallback) ======================
-export const generateProjectBlueprint = async (
-  idea: string
-): Promise<ProjectBlueprint> => {
-  // 1st try → Groq
-  if (groq) {
-    try {
-      console.log("Trying Groq...");
-      return await generateWithGroq(idea);
-    } catch (err) {
-      console.warn("Groq failed, trying Gemini...", err);
-    }
-  }
-
-  // 2nd try → Gemini
-  if (genAI) {
-    try {
-      console.log("Trying Gemini...");
-      return await generateWithGemini(idea);
-    } catch (err) {
-      console.error("Gemini also failed:", err);
-    }
-  }
-
-  throw new Error("All AI providers failed. Please check your API keys.");
-};
-
 // ====================== CHAT ======================
 export const chatWithAI = async (
   history: { role: "user" | "model"; parts: { text: string }[] }[],
   message: string,
   projectContext?: string
 ): Promise<string> => {
+  if (!groq) {
+    throw new Error("GROQ_API_KEY is missing. Please add it to your .env file.");
+  }
+
   const systemPrompt = projectContext
     ? `You are a senior software engineer helping with this project:
 
@@ -189,62 +149,24 @@ Rules:
 - Use plain text only
 - Talk like a helpful senior developer`;
 
-  // Prefer Groq
-  if (groq) {
-    try {
-      const messages: any[] = [
-        { role: "system", content: systemPrompt },
-        ...history.map((h) => ({
-          role: h.role === "model" ? "assistant" : "user",
-          content: h.parts[0]?.text || "",
-        })),
-        { role: "user", content: message },
-      ];
+  const messages: any[] = [
+    { role: "system", content: systemPrompt },
+    ...history.map((h) => ({
+      role: h.role === "model" ? "assistant" : "user",
+      content: h.parts[0]?.text || "",
+    })),
+    { role: "user", content: message },
+  ];
 
-      const completion = await groq.chat.completions.create({
-        messages,
-        model: "llama-3.3-70b-versatile",
-        temperature: 0.6,
-        max_tokens: 1024,
-      });
+  const completion = await groq.chat.completions.create({
+    messages,
+    model: "llama-3.3-70b-versatile",
+    temperature: 0.6,
+    max_tokens: 1024,
+  });
 
-      const reply = completion.choices[0]?.message?.content || "No response";
-      return cleanMarkdown(reply);
-    } catch (err) {
-      console.warn("Groq chat failed, trying Gemini...", err);
-    }
-  }
-
-  // Fallback Gemini
-  if (genAI) {
-    try {
-      const model = genAI.getGenerativeModel({
-        model: "gemini-3.6-flash",
-        generationConfig: {
-          temperature: 0.6,
-          maxOutputTokens: 1024,
-        },
-      });
-
-      const chat = model.startChat({
-        history: [
-          { role: "user", parts: [{ text: systemPrompt }] },
-          {
-            role: "model",
-            parts: [{ text: "Got it. Plain text answers only." }],
-          },
-          ...history,
-        ],
-      });
-
-      const result = await chat.sendMessage(message);
-      return cleanMarkdown(result.response.text());
-    } catch (err) {
-      console.error("Gemini chat failed:", err);
-    }
-  }
-
-  throw new Error("No AI provider available");
+  const reply = completion.choices[0]?.message?.content || "No response";
+  return cleanMarkdown(reply);
 };
 
 // ====================== BACKWARD COMPATIBILITY ======================
