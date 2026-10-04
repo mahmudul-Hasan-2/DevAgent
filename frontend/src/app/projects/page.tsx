@@ -2,7 +2,6 @@
 
 import ProjectSkeleton from "@/components/ProjectSkeleton";
 import { fetchProjects, FilterParams } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
 import {
   ChevronLeft,
   ChevronRight,
@@ -13,20 +12,6 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-export interface Project {
-  _id?: string;
-  name: string;
-  shortDescription: string;
-  description: string;
-  category: string;
-  status: "planning" | "active" | "in-progress" | string;
-  tags: string[];
-  image: string;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export default function ExploreProjectsPage() {
   const [page, setPage] = useState(1);
   const limit = 8;
@@ -34,12 +19,19 @@ export default function ExploreProjectsPage() {
   const [filters, setFilters] = useState<FilterParams>({
     search: "",
     category: "",
+    minBudget: "",
+    maxBudget: "",
     sortBy: "",
   });
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // Debounce search input
+  // Data fetching states replacing TanStack Query
+  const [data, setData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isError, setIsError] = useState<boolean>(false);
+
+  // Debounce search filter input
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(filters.search || "");
@@ -48,67 +40,95 @@ export default function ExploreProjectsPage() {
     return () => clearTimeout(timer);
   }, [filters.search]);
 
+  // Active filter payload
   const activeFilters = {
     ...filters,
     search: debouncedSearch,
   };
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["projects", activeFilters],
-    queryFn: () => fetchProjects(activeFilters),
-    placeholderData: (previousData) => previousData,
-  });
+  // Standard fetch implementation without TanStack Query
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
+    setIsError(false);
 
-  // Extract raw list of projects
-  const rawProjects: Project[] = Array.isArray(data) ? data : data?.data || [];
+    async function loadProjects() {
+      try {
+        const result = await fetchProjects(activeFilters);
+        if (isMounted) {
+          setData(result);
+          setIsLoading(false);
+        }
+      } catch (err) {
+        if (isMounted) {
+          console.error("Failed to fetch projects:", err);
+          setIsError(true);
+          setIsLoading(false);
+        }
+      }
+    }
 
-  // Client-Side Search & Category Filter
-  const filteredProjects = rawProjects.filter((project) => {
-    const matchesSearch =
-      !debouncedSearch ||
-      project.name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      project.shortDescription
-        ?.toLowerCase()
-        .includes(debouncedSearch.toLowerCase()) ||
-      project.description
-        ?.toLowerCase()
-        .includes(debouncedSearch.toLowerCase()) ||
-      project.tags?.some((tag) =>
-        tag.toLowerCase().includes(debouncedSearch.toLowerCase())
-      );
+    loadProjects();
 
-    const matchesCategory =
-      !filters.category ||
-      project.category?.toLowerCase() === filters.category.toLowerCase();
+    return () => {
+      isMounted = false;
+    };
+  }, [debouncedSearch, filters.category, filters.sortBy]);
+
+  // Normalize fetched data into a flat array
+  const rawProjects = Array.isArray(data) ? data : data?.data || [];
+
+  // Client-side filtering logic
+  const filteredProjects = rawProjects.filter((project: any) => {
+    const matchesSearch = debouncedSearch
+      ? (project.name?.toLowerCase() || "").includes(
+          debouncedSearch.toLowerCase()
+        ) ||
+        (project.shortDescription?.toLowerCase() || "").includes(
+          debouncedSearch.toLowerCase()
+        ) ||
+        (project.description?.toLowerCase() || "").includes(
+          debouncedSearch.toLowerCase()
+        ) ||
+        project.tags?.some((tag: string) =>
+          tag.toLowerCase().includes(debouncedSearch.toLowerCase())
+        )
+      : true;
+
+    const matchesCategory = filters.category
+      ? project.category === filters.category
+      : true;
 
     return matchesSearch && matchesCategory;
   });
 
-  // Client-Side Pagination Calculations
+  // Client-side pagination calculation
   const totalProjects = filteredProjects.length;
-  const totalPages = Math.ceil(totalProjects / limit) || 1;
+  const totalPages = Math.max(1, Math.ceil(totalProjects / limit));
+  const currentPage = Math.min(page, totalPages);
 
-  // Slice the array for current page display
   const displayedProjects = filteredProjects.slice(
-    (page - 1) * limit,
-    page * limit
+    (currentPage - 1) * limit,
+    currentPage * limit
   );
 
   const handleFilterChange = (key: keyof FilterParams, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
-    if (key === "category" || key === "sortBy") setPage(1);
+    setPage(1);
   };
 
   const resetFilters = () => {
     setFilters({
       search: "",
       category: "",
+      minBudget: "",
+      maxBudget: "",
       sortBy: "",
     });
     setPage(1);
   };
 
-  const hasActiveFilters = Boolean(filters.search || filters.category || filters.sortBy);
+  const hasActiveFilters = Boolean(filters.search || filters.category);
 
   return (
     <div className="min-h-screen bg-[#05070C] text-slate-100 px-4 sm:px-6 py-10">
@@ -123,14 +143,15 @@ export default function ExploreProjectsPage() {
             Explore Agentic Deployments
           </h1>
           <p className="text-sm text-slate-400 mt-1.5 max-w-lg">
-            Discover production-ready AI tools, autonomous agents, and custom software.
+            Discover production-ready AI tools, autonomous agents, and custom
+            software.
           </p>
         </div>
 
         {hasActiveFilters && (
           <button
             onClick={resetFilters}
-            className="self-start md:self-auto inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-cyan-300 transition-colors bg-slate-900/80 border border-slate-800 hover:border-slate-700 px-3 py-1.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 cursor-pointer"
+            className="self-start md:self-auto inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-cyan-300 transition-colors bg-slate-900/80 border border-slate-800 hover:border-slate-700 px-3 py-1.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
           >
             <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
             Reset Filters
@@ -138,7 +159,7 @@ export default function ExploreProjectsPage() {
         )}
       </div>
 
-      {/* Filters Bar */}
+      {/* Filters */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8 bg-[#0A0D14]/90 border border-slate-800/80 p-4 rounded-xl shadow-xl">
         <div className="sm:col-span-2 relative">
           <Search
@@ -158,7 +179,7 @@ export default function ExploreProjectsPage() {
         <select
           value={filters.category}
           onChange={(e) => handleFilterChange("category", e.target.value)}
-          className="bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500/80 text-slate-300 transition cursor-pointer"
+          className="bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500/80 text-slate-300 transition"
           aria-label="Filter by category"
         >
           <option value="">All Categories</option>
@@ -168,7 +189,7 @@ export default function ExploreProjectsPage() {
         </select>
       </div>
 
-      {/* Projects Grid */}
+      {/* Grid */}
       <div className="max-w-7xl mx-auto">
         {isLoading ? (
           <ProjectSkeleton />
@@ -182,7 +203,7 @@ export default function ExploreProjectsPage() {
         ) : displayedProjects.length === 0 ? (
           <div className="text-center py-16 border border-slate-800 bg-[#0A0D14]/50 rounded-xl">
             <p className="text-slate-400 text-sm font-medium">
-              No deployments found
+              No projects found
             </p>
             <p className="text-slate-600 text-xs mt-1">
               Try adjusting your filters or search terms.
@@ -191,14 +212,12 @@ export default function ExploreProjectsPage() {
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-              {displayedProjects.map((project, idx) => {
-                const projectId =
-                  project._id || encodeURIComponent(project.name);
-
+              {displayedProjects.map((project: any) => {
+                const projectId = project._id || project.id || project.name;
                 return (
                   <Link
-                    key={project._id || `${project.name}-${idx}`}
-                    href={`/projects/${projectId}`}
+                    key={projectId}
+                    href={`/projects/${encodeURIComponent(projectId)}`}
                     className="group bg-[#0A0D14]/90 border border-slate-800/70 rounded-xl p-5 flex flex-col justify-between hover:border-cyan-500/40 hover:bg-[#0E131F] transition-all duration-250 shadow-lg hover:shadow-[0_0_24px_rgba(6,182,212,0.1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
                   >
                     <div>
@@ -214,7 +233,7 @@ export default function ExploreProjectsPage() {
                       </div>
 
                       <h2 className="text-sm font-semibold text-slate-200 group-hover:text-cyan-300 transition-colors line-clamp-1">
-                        {project.name}
+                        {project.name || "Untitled Project"}
                       </h2>
                       <p className="text-xs text-slate-400 mt-2 line-clamp-3 leading-relaxed">
                         {project.shortDescription || project.description}
@@ -223,14 +242,16 @@ export default function ExploreProjectsPage() {
 
                     <div className="mt-4 pt-4 border-t border-slate-800/80">
                       <div className="flex flex-wrap gap-1.5">
-                        {project.tags?.slice(0, 3).map((tag: string, i: number) => (
-                          <span
-                            key={i}
-                            className="text-[10px] font-mono bg-slate-900/90 border border-slate-800 text-slate-400 px-2 py-0.5 rounded"
-                          >
-                            #{tag}
-                          </span>
-                        ))}
+                        {project.tags
+                          ?.slice(0, 3)
+                          .map((tag: string, i: number) => (
+                            <span
+                              key={i}
+                              className="text-[10px] font-mono bg-slate-900/90 border border-slate-800 text-slate-400 px-2 py-0.5 rounded"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
                         {project.tags?.length > 3 && (
                           <span className="text-[10px] text-slate-500 font-mono self-center">
                             +{project.tags.length - 3}
@@ -243,14 +264,14 @@ export default function ExploreProjectsPage() {
               })}
             </div>
 
-            {/* Pagination Controls */}
+            {/* Pagination Control */}
             {totalPages > 1 && (
               <nav
                 className="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800/80 pt-6"
                 aria-label="Pagination"
               >
                 <p className="text-xs text-slate-500 font-mono">
-                  Showing page <span className="text-slate-300">{page}</span> of{" "}
+                  Showing page <span className="text-slate-300">{currentPage}</span> of{" "}
                   <span className="text-slate-300">{totalPages}</span> (
                   {totalProjects} results)
                 </p>
@@ -258,8 +279,8 @@ export default function ExploreProjectsPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                    disabled={page === 1}
-                    className="p-2 text-slate-400 hover:text-white bg-slate-900/80 border border-slate-800 rounded-lg hover:border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 cursor-pointer"
+                    disabled={currentPage === 1}
+                    className="p-2 text-slate-400 hover:text-white bg-slate-900/80 border border-slate-800 rounded-lg hover:border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
                     aria-label="Previous page"
                   >
                     <ChevronLeft className="w-4 h-4" />
@@ -271,13 +292,15 @@ export default function ExploreProjectsPage() {
                         <button
                           key={pageNum}
                           onClick={() => setPage(pageNum)}
-                          className={`min-w-[2rem] px-2.5 py-1 text-xs rounded-lg font-mono transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 cursor-pointer ${
-                            page === pageNum
+                          className={`min-w-[2rem] px-2.5 py-1 text-xs rounded-lg font-mono transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 ${
+                            currentPage === pageNum
                               ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold"
                               : "text-slate-400 hover:bg-slate-900 border border-transparent"
                           }`}
                           aria-label={`Go to page ${pageNum}`}
-                          aria-current={page === pageNum ? "page" : undefined}
+                          aria-current={
+                            currentPage === pageNum ? "page" : undefined
+                          }
                         >
                           {pageNum}
                         </button>
@@ -286,9 +309,11 @@ export default function ExploreProjectsPage() {
                   </div>
 
                   <button
-                    onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-                    disabled={page === totalPages}
-                    className="p-2 text-slate-400 hover:text-white bg-slate-900/80 border border-slate-800 rounded-lg hover:border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 cursor-pointer"
+                    onClick={() =>
+                      setPage((p) => Math.min(p + 1, totalPages))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="p-2 text-slate-400 hover:text-white bg-slate-900/80 border border-slate-800 rounded-lg hover:border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
                     aria-label="Next page"
                   >
                     <ChevronRight className="w-4 h-4" />
