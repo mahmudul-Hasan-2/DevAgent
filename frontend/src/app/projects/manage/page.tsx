@@ -27,14 +27,13 @@ export default function ManageProjectsPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [editFormData, setEditFormData] = useState({
-    title: "",
+    name: "",
     category: "AI Agent",
+    status: "planning",
     shortDescription: "",
-    fullDescription: "",
-    minBudget: "",
-    maxBudget: "",
-    requiredSkills: "",
-    imageUrl: "",
+    description: "",
+    tags: "",
+    image: "",
   });
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -53,7 +52,7 @@ export default function ManageProjectsPage() {
     queryFn: async () => {
       if (!userId) return [];
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/projects/user?userId=${userId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/projects/user?userId=${userId}`
       );
       if (!res.ok) throw new Error("Failed to fetch user projects");
       return res.json();
@@ -66,23 +65,20 @@ export default function ManageProjectsPage() {
   const handleOpenEditModal = async (id: string) => {
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/project/${id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/project/${id}`
       );
       if (!res.ok) throw new Error("Failed to fetch project details");
       const projectData = await res.json();
 
       setSelectedProject(projectData);
       setEditFormData({
-        title: projectData.title || "",
+        name: projectData.name || "",
         category: projectData.category || "AI Agent",
+        status: projectData.status || "planning",
         shortDescription: projectData.shortDescription || "",
-        fullDescription: projectData.fullDescription || "",
-        minBudget: projectData.estimatedBudgetRange?.min?.toString() || "",
-        maxBudget: projectData.estimatedBudgetRange?.max?.toString() || "",
-        requiredSkills: projectData.requiredSkills
-          ? projectData.requiredSkills.join(", ")
-          : "",
-        imageUrl: projectData.imageUrl || "",
+        description: projectData.description || "",
+        tags: projectData.tags ? projectData.tags.join(", ") : "",
+        image: projectData.image || "",
       });
       setIsEditModalOpen(true);
     } catch (error) {
@@ -93,7 +89,7 @@ export default function ManageProjectsPage() {
   const handleEditChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    >
   ) => {
     setEditFormData({ ...editFormData, [e.target.name]: e.target.value });
   };
@@ -102,33 +98,31 @@ export default function ManageProjectsPage() {
     e.preventDefault();
     if (!selectedProject) return;
 
+    const projectId = selectedProject._id || selectedProject.id;
     setIsUpdating(true);
     const payload = {
-      title: editFormData.title.trim(),
+      name: editFormData.name.trim(),
       category: editFormData.category,
+      status: editFormData.status,
       shortDescription: editFormData.shortDescription.trim(),
-      fullDescription: editFormData.fullDescription.trim(),
-      estimatedBudgetRange: {
-        min: Number(editFormData.minBudget) || 0,
-        max: Number(editFormData.maxBudget) || 0,
-      },
-      requiredSkills: editFormData.requiredSkills
-        ? editFormData.requiredSkills
+      description: editFormData.description.trim(),
+      tags: editFormData.tags
+        ? editFormData.tags
             .split(",")
-            .map((s) => s.trim())
+            .map((s) => s.trim().toLowerCase())
             .filter(Boolean)
         : [],
-      imageUrl: editFormData.imageUrl.trim(),
+      image: editFormData.image.trim(),
     };
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/project/${selectedProject._id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/project/${projectId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-        },
+        }
       );
 
       if (res.ok) {
@@ -153,13 +147,14 @@ export default function ManageProjectsPage() {
   const handleDeleteExecute = async () => {
     if (!projectToDelete) return;
 
+    const projectId = projectToDelete._id || projectToDelete.id;
     setIsDeleting(true);
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/project/${projectToDelete._id}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/project/${projectId}`,
         {
           method: "DELETE",
-        },
+        }
       );
       if (res.ok) {
         toast.success("Project deleted successfully!");
@@ -220,51 +215,59 @@ export default function ManageProjectsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4">
-            {projects?.map((project: any) => (
-              <div
-                key={project._id}
-                className="bg-[#0A0D14]/80 border border-slate-800/80 hover:border-slate-700/80 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all shadow-lg"
-              >
-                <div className="space-y-1.5 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-800/40 text-cyan-400">
-                      {project.category || "General"}
-                    </span>
-                    <Link
-                      href={`/projects/${project._id}`}
-                      className="text-slate-500 hover:text-cyan-400 transition-colors"
-                      title="View deployment page"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </Link>
+            {projects?.map((project: any) => {
+              const pId = project._id || project.id || project.name;
+              return (
+                <div
+                  key={pId}
+                  className="bg-[#0A0D14]/80 border border-slate-800/80 hover:border-slate-700/80 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all shadow-lg"
+                >
+                  <div className="space-y-1.5 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-800/40 text-cyan-400">
+                        {project.category || "General"}
+                      </span>
+                      {project.status && (
+                        <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-900/40 text-emerald-400">
+                          {project.status}
+                        </span>
+                      )}
+                      <Link
+                        href={`/projects/${encodeURIComponent(pId)}`}
+                        className="text-slate-500 hover:text-cyan-400 transition-colors"
+                        title="View deployment page"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                    <h3 className="text-base font-semibold text-slate-100 truncate">
+                      {project.name}
+                    </h3>
+                    <p className="text-xs text-slate-400 line-clamp-1">
+                      {project.shortDescription || project.description}
+                    </p>
                   </div>
-                  <h3 className="text-base font-semibold text-slate-100 truncate">
-                    {project.title}
-                  </h3>
-                  <p className="text-xs text-slate-400 line-clamp-1">
-                    {project.shortDescription}
-                  </p>
-                </div>
 
-                <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                  <button
-                    onClick={() => handleOpenEditModal(project._id)}
-                    className="p-2.5 bg-cyan-950/40 border border-cyan-800/50 text-cyan-400 hover:bg-cyan-900/40 rounded-xl transition-colors"
-                    title="Edit Project"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                    <button
+                      onClick={() => handleOpenEditModal(pId)}
+                      className="p-2.5 bg-cyan-950/40 border border-cyan-800/50 text-cyan-400 hover:bg-cyan-900/40 rounded-xl transition-colors"
+                      title="Edit Project"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
 
-                  <button
-                    onClick={() => confirmDelete(project)}
-                    className="p-2.5 bg-red-950/40 border border-red-800/50 text-red-400 hover:bg-red-900/40 rounded-xl transition-colors"
-                    title="Delete Project"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                    <button
+                      onClick={() => confirmDelete(project)}
+                      className="p-2.5 bg-red-950/40 border border-red-800/50 text-red-400 hover:bg-red-900/40 rounded-xl transition-colors"
+                      title="Delete Project"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -288,32 +291,51 @@ export default function ManageProjectsPage() {
             <form onSubmit={handleUpdateSubmit} className="space-y-4">
               <div className="space-y-1">
                 <label className="text-xs text-slate-300 font-medium">
-                  Title
+                  Project Name
                 </label>
                 <input
-                  name="title"
-                  value={editFormData.title}
+                  name="name"
+                  value={editFormData.name}
                   onChange={handleEditChange}
                   className="w-full bg-slate-950/80 border border-slate-800 p-2.5 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-cyan-500/80"
                   required
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs text-slate-300 font-medium">
-                  Category
-                </label>
-                <select
-                  name="category"
-                  value={editFormData.category}
-                  onChange={handleEditChange}
-                  className="w-full bg-slate-950/80 border border-slate-800 p-2.5 rounded-lg text-sm text-slate-300 focus:outline-none focus:border-cyan-500/80"
-                  required
-                >
-                  <option value="AI Agent">AI Agent</option>
-                  <option value="Web App">Web App</option>
-                  <option value="Automation">Automation</option>
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-300 font-medium">
+                    Category
+                  </label>
+                  <select
+                    name="category"
+                    value={editFormData.category}
+                    onChange={handleEditChange}
+                    className="w-full bg-slate-950/80 border border-slate-800 p-2.5 rounded-lg text-sm text-slate-300 focus:outline-none focus:border-cyan-500/80"
+                    required
+                  >
+                    <option value="AI Agent">AI Agent</option>
+                    <option value="Web App">Web App</option>
+                    <option value="Automation">Automation</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-300 font-medium">
+                    Status
+                  </label>
+                  <select
+                    name="status"
+                    value={editFormData.status}
+                    onChange={handleEditChange}
+                    className="w-full bg-slate-950/80 border border-slate-800 p-2.5 rounded-lg text-sm text-slate-300 focus:outline-none focus:border-cyan-500/80"
+                    required
+                  >
+                    <option value="planning">Planning</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="active">Active</option>
+                  </select>
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -331,11 +353,11 @@ export default function ManageProjectsPage() {
 
               <div className="space-y-1">
                 <label className="text-xs text-slate-300 font-medium">
-                  Full Description
+                  Detailed Description
                 </label>
                 <textarea
-                  name="fullDescription"
-                  value={editFormData.fullDescription}
+                  name="description"
+                  value={editFormData.description}
                   onChange={handleEditChange}
                   rows={4}
                   className="w-full bg-slate-950/80 border border-slate-800 p-2.5 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-cyan-500/80"
@@ -343,40 +365,13 @@ export default function ManageProjectsPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs text-slate-300 font-medium">
-                    Min Budget ($)
-                  </label>
-                  <input
-                    name="minBudget"
-                    type="number"
-                    value={editFormData.minBudget}
-                    onChange={handleEditChange}
-                    className="w-full bg-slate-950/80 border border-slate-800 p-2.5 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-cyan-500/80"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-slate-300 font-medium">
-                    Max Budget ($)
-                  </label>
-                  <input
-                    name="maxBudget"
-                    type="number"
-                    value={editFormData.maxBudget}
-                    onChange={handleEditChange}
-                    className="w-full bg-slate-950/80 border border-slate-800 p-2.5 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-cyan-500/80"
-                  />
-                </div>
-              </div>
-
               <div className="space-y-1">
                 <label className="text-xs text-slate-300 font-medium">
-                  Skills (Comma Separated)
+                  Tags (Comma Separated)
                 </label>
                 <input
-                  name="requiredSkills"
-                  value={editFormData.requiredSkills}
+                  name="tags"
+                  value={editFormData.tags}
                   onChange={handleEditChange}
                   className="w-full bg-slate-950/80 border border-slate-800 p-2.5 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-cyan-500/80"
                 />
@@ -387,8 +382,8 @@ export default function ManageProjectsPage() {
                   Cover Image URL
                 </label>
                 <input
-                  name="imageUrl"
-                  value={editFormData.imageUrl}
+                  name="image"
+                  value={editFormData.image}
                   onChange={handleEditChange}
                   className="w-full bg-slate-950/80 border border-slate-800 p-2.5 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-cyan-500/80"
                 />
@@ -442,7 +437,7 @@ export default function ManageProjectsPage() {
                 <p className="text-xs text-slate-400 mt-1 leading-relaxed">
                   Are you sure you want to delete{" "}
                   <span className="text-slate-200 font-semibold">
-                    "{projectToDelete?.title}"
+                    "{projectToDelete?.name}"
                   </span>
                   ? This action cannot be undone.
                 </p>
