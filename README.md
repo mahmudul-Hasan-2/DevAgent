@@ -131,6 +131,7 @@ Create a `.env.local` file in the `frontend` root directory:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5000
 ```
+
 ### 3. Start Frontend Server
 
 Run the frontend development server:
