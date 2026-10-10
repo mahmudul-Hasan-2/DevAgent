@@ -71,6 +71,7 @@ Navigate to the `backend` directory, install dependencies, and configure environ
 ```bash
 # Navigate to backend folder
 cd backend
+```
 
 # Install dependencies
 npm install
