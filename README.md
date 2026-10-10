@@ -44,6 +44,7 @@ DevAgent/
     ├── package.json      # Backend dependencies & scripts
     └── README.md
 
+```
 
 ---
 
@@ -74,7 +75,9 @@ cd backend
 ```
 
 # Install dependencies
+```bash
 npm install
+```
 
 ## 🚀 Quick Start Guide
 
@@ -97,7 +100,7 @@ npm install
    # OAuth Configuration
    GOOGLE_CLIENT_ID=your_google_client_id
    GOOGLE_CLIENT_SECRET=your_google_client_secret
-
+   ```
 ---
 
 ### Step 1: Start Backend Server
@@ -106,7 +109,7 @@ Run the development server inside your `backend` directory:
 
 ```bash
 npm run dev
-
+```
 ---
 
 ## 🛠️ Step 2: Frontend Configuration
